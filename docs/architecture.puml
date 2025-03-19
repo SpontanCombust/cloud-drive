@@ -1,0 +1,37 @@
+@startuml "Cloud Drive"
+
+left to right direction
+
+
+actor "User1" as User1
+actor "User2" as User2
+
+package "Frontend - WPF clients" {
+    node "Client1" as Client1
+    node "Client2" as Client2
+    node "ClientN" as ClientN
+}
+
+package "Backend" {
+    node "ASP.NET API Server" as Server
+
+    database "MongoDB" as Db
+
+    folder "File system" as File {
+        Folder "User 1 files"
+        Folder "User 2 files"
+    }
+}
+
+
+User1 --> Client1
+User2 --> Client2
+User2 --> ClientN
+Client2 .left. ClientN
+Client1 --> Server
+Client2 --> Server
+ClientN --> Server
+Server --> Db
+Server --> File
+
+@enduml
