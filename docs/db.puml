@@ -1,0 +1,18 @@
+@startuml "Cloud Drive - database"
+
+!define pk(x) <b><color:#b8861b><&key></color> x</b>
+!define fk(x) <color:#aaaaaa><&key></color> x
+!define column(x) <color:#efefef><&media-record></color> x
+!define table(x) entity x << (T, white) >>
+
+
+table(USER) {
+    pk(USER_ID): BIGINT NOT NULL
+    --
+    column(EMAIL): TEXT NOT NULL
+    column(PASSWORD): TEXT NOT NULL
+    column(CREATED_DATE): DATETIME NOT NULL
+    column(MODIFIED_DATE): DATETIME
+}
+
+@enduml

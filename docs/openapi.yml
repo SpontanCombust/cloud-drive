@@ -10,7 +10,7 @@ paths:
       summary: Register a new user.
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -28,7 +28,7 @@ paths:
       summary: Log in user
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -42,111 +42,14 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: object
+                properties:
+                  accessToken:
+                    type: string
         "401":
           description: Bad login data
 
-  /files-meta:
-    get:
-      summary: Get metadata of user drive's root directory
-      parameters:
-        - $ref: '#/components/parameters/AccessToken'
-      responses:
-        "200":
-          description: Metadata root files
-          content:
-            application/json:
-              schema:
-                type: $ref:'#/components/schemas/FileMeta'
-        "401":
-          description: User not signed in
-  /files-meta/{fileId}:
-    get:
-      summary: Get metadata of a specific file
-      parameters:
-        - $ref: '#/components/parameters/AccessToken'
-        - $ref: '#/components/parameters/PathFileId'
-      responses:
-        "200":
-          description: Metadata root files
-          content:
-            content:
-              application/json:
-                schema:
-                  type: 
-                    $ref:'#/components/schemas/FileMeta'
-        "401":
-          description: User not signed in
-  /files/{fileId}:
-    get:
-      summary: Download a file
-      parameters:
-        - $ref: '#/components/parameters/AccessToken'
-        - $ref: '#/components/parameters/PathFileId'
-      responses:
-        "200":
-          description: Binary stream of the file
-          content:
-            content:
-              application/octet-stream:
-        "401":
-          description: User not signed in
-    put:
-      summary: Upload a new or updated file to the directory
-      parameters:
-      - $ref: '#/components/parameters/AccessToken'
-      - $ref: '#/components/parameters/PathFileId'
-      responses:
-        "200":
-          description: Metadata about the uploaded file
-          content:
-            content:
-              application/x-www-form-urlencoded:
-                schema:
-                  type: string
-                  format: binary
-        "401":
-          description: User not signed in
-    delete:
-      summary: Remove a file
-      parameters:
-        - $ref: '#/components/parameters/AccessToken'
-        - $ref: '#/components/parameters/PathFileId'
-      responses:
-        "200":
-          description: File deleted sucessfully
-        "401":
-          description: User not signed in
-  
-
 components:
-  schemas:
-    FileMeta:
-      type: object
-      properties:
-        fileId:
-          description: Unique file identifier
-          type: string
-        md5:
-          description: MD5 hash of the file
-          type: string
-        previousVerId:
-          description: ID of the previous version of this file
-        isDir: 
-          description: Is file a directory
-          type: boolean
-        path:
-          description: Relative path of the file
-          type: string
-        childFileIds:
-          description: IDs of child files if this is a directory
-          type: array
-          items:
-            type: string
-        dateCreated:
-          type: string
-        dateLastModified:
-          type: string
   parameters:
     AccessToken:
       in: header
@@ -155,10 +58,3 @@ components:
       schema:
         type: string
       description: Access token
-    PathFileId:
-      in: path
-      name: fileId
-      required: true
-      schema:
-        type: string
-      description: Unique file identifier
