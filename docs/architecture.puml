@@ -15,7 +15,7 @@ package "Frontend - WPF clients" {
 package "Backend" {
     node "ASP.NET API Server" as Server
 
-    database "MongoDB" as Db
+    database "PostgreSQL" as Db
 
     folder "File system" as File {
         Folder "User 1 files"
