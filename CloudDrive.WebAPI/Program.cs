@@ -55,6 +55,7 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
 builder.Services.AddScoped<IAccessTokenProvider, JwtAccessTokenProvider>();
 builder.Services.AddScoped<IPasswordEncoder, BCryptPasswordEncoder>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
