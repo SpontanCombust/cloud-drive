@@ -10,8 +10,8 @@ using System.Security.Claims;
 
 namespace CloudDrive.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("user")]
     [Authorize]
     public class UserController : ControllerBase
     {
@@ -24,10 +24,10 @@ namespace CloudDrive.WebAPI.Controllers
 
 
         [HttpGet]
-        public ActionResult<UserDTO> Get()
+        public async Task<ActionResult<UserDTO>> Get()
         {
             var userId = User.GetId();
-            var user = userService.GetUserById(userId);
+            var user = await userService.GetUserById(userId);
             if (user == null)
             {
                 return NotFound();

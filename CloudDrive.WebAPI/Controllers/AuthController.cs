@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CloudDrive.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService authService;
@@ -16,22 +16,36 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
 
-        [HttpPost(Name = "signup")]
+        [HttpPost("signup")]
         public async Task<ActionResult<SignUpResponse>> SignUp([FromForm] SignUpRequest req)
         {
-            await authService.SignUp(req.Email, req.Password);
-            var resp = new SignUpResponse { };
-            return Ok(resp);
+            try
+            {
+                await authService.SignUp(req.Email, req.Password);
+                var resp = new SignUpResponse { };
+                return Ok(resp);
+            } 
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPost(Name = "signin")]
+        [HttpPost("signin")]
         public async Task<ActionResult<SignInResponse>> SignIn([FromForm] SignInRequest req)
         {
-            var accessToken = await authService.SignIn(req.Email, req.Password);
-            var resp = new SignInResponse { 
-                AccessToken = accessToken
-            };
-            return Ok(resp);
+            try
+            {
+                var accessToken = await authService.SignIn(req.Email, req.Password);
+                var resp = new SignInResponse { 
+                    AccessToken = accessToken
+                };
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
     }
 }
