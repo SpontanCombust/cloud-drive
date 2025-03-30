@@ -18,7 +18,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 
-namespace Aplikacja_kliencka
+namespace CloudDrive.App
 {
     public partial class MainWindow : Window
     {
