@@ -8,4 +8,13 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CloudDrive.Core\CloudDrive.Core.csproj" />
+    <ProjectReference Include="..\CloudDrive.Infrastructure\CloudDrive.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
