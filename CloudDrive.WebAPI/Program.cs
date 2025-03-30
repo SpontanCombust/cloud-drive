@@ -49,7 +49,10 @@ builder.Services.AddSwaggerGen(o =>
 
 
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetValue<string>("Db:ConnectionString"))
+    opts.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"), 
+        x => x.MigrationsAssembly("CloudDrive.Infrastructure")
+    )
 );
 
 builder.Services.AddScoped<IAccessTokenProvider, JwtAccessTokenProvider>();
@@ -63,9 +66,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         o.RequireHttpsMetadata = false;
         o.SaveToken = true;
+        o.MapInboundClaims = false;
         o.TokenValidationParameters = new TokenValidationParameters
         {
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? ""))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? "")),
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false, 
+            ValidateAudience = false,
+            ValidateLifetime = true,
         };
     });
 
