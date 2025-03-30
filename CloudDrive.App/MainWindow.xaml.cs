@@ -23,8 +23,16 @@ namespace Aplikacja_kliencka
     public partial class MainWindow : Window
     {
         // Przykładowa ścieżka do pliku konfiguracyjnego, która powinna znikną w wersji produkcjyjnej
-        private const string SettingsFilePath = @"C:\Users\wikto\Desktop\Projet Cloud Drive\cloud_drive_config.json";
-        private readonly string _serverUrl;
+        private string SettingsFilePath {
+            get
+            {
+                var appDataPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CloudDrive");
+                Directory.CreateDirectory(appDataPath);
+                var settingsPath = System.IO.Path.Combine(appDataPath, "settings.json");
+                return settingsPath;
+            }
+        }
+        private string _serverUrl;
 
         public MainWindow()
         {
@@ -43,11 +51,11 @@ namespace Aplikacja_kliencka
         private void Folder_Click(object sender, RoutedEventArgs e)
         {
             // Otwórz okno dialogowe do wyboru folderu
-            var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var folderDialog = new Microsoft.Win32.OpenFolderDialog();
+            if (folderDialog.ShowDialog() ?? false)
             {
                 // Ustaw wybraną ścieżkę w polu tekstowym
-                FolderPathTextBox.Text = folderDialog.SelectedPath;
+                FolderPathTextBox.Text = folderDialog.FolderName;
             }
         }
 
@@ -61,12 +69,14 @@ namespace Aplikacja_kliencka
                 FolderPath = FolderPathTextBox.Text
             };
 
+            _serverUrl = ServerUrlTextBox.Text;
+
             // Zapisz dane do pliku JSON
             string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
             File.WriteAllText(SettingsFilePath, json);
 
             // Wyświetl komunikat o sukcesie
-            MessageBox.Show("Ustawienia zostały zapisane!");
+            System.Windows.MessageBox.Show("Ustawienia zostały zapisane!");
         }
 
         // Metoda do wczytywania ustawień z pliku
