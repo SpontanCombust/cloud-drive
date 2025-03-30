@@ -1,0 +1,33 @@
+name: cloud-drive
+
+services:
+  db:
+    container_name: cloud-drive-db
+    image: postgres:16.4
+    restart: unless-stopped
+    profiles: [dev, prod]
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - type: bind
+        source: db-init
+        target: /docker-entrypoint-initdb.d
+      - type: volume
+        source: db-volume
+        target: /var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  pgadmin:
+    container_name: cloud-drive-pgadmin
+    image: elestio/pgadmin:latest
+    restart: unless-stopped
+    profiles: [dev]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin@test.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin
+    ports:
+      - '5433:80'
+
+volumes:
+  db-volume: {}
