@@ -120,23 +120,123 @@
         "tags": [
           "Files"
         ],
+        "operationId": "CreateFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "File": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "ClientDirPath": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "File": {
+                  "style": "form"
+                },
+                "ClientDirPath": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDTO"
+                  "$ref": "#/components/schemas/CreateFileResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDTO"
+                  "$ref": "#/components/schemas/CreateFileResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDTO"
+                  "$ref": "#/components/schemas/CreateFileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{fileId}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "GetLatestFileVersion",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{fileId}/{versionNr}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "GetFileVersion",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionNr",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
                 }
               }
             }
@@ -152,7 +252,24 @@
         "operationId": "Sync",
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncGetResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncGetResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncGetResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -190,6 +307,73 @@
   },
   "components": {
     "schemas": {
+      "CreateFileResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "firstFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FileDTO": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FileVersionDTO": {
+        "type": "object",
+        "properties": {
+          "fileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientDirPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientFileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "versionNr": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "md5": {
+            "type": "string",
+            "nullable": true
+          },
+          "sizeByes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "SignInResponse": {
         "type": "object",
         "properties": {
@@ -202,6 +386,19 @@
       },
       "SignUpResponse": {
         "type": "object",
+        "additionalProperties": false
+      },
+      "SyncGetResponse": {
+        "type": "object",
+        "properties": {
+          "currentFileVersionsInfos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileVersionDTO"
+            },
+            "nullable": true
+          }
+        },
         "additionalProperties": false
       },
       "UserDTO": {
