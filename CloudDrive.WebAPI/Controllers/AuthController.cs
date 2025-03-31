@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CloudDrive.WebAPI.Controllers
 {
-    [ApiController]
     [Route("auth")]
+    [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService authService;
@@ -16,7 +16,7 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
 
-        [HttpPost("signup")]
+        [HttpPost("signup", Name = "SignUp")]
         public async Task<ActionResult<SignUpResponse>> SignUp([FromForm] SignUpRequest req)
         {
             try
@@ -31,7 +31,7 @@ namespace CloudDrive.WebAPI.Controllers
             }
         }
 
-        [HttpPost("signin")]
+        [HttpPost("signin", Name = "SignIn")]
         public async Task<ActionResult<SignInResponse>> SignIn([FromForm] SignInRequest req)
         {
             try

@@ -10,6 +10,7 @@
         "tags": [
           "Auth"
         ],
+        "operationId": "SignUp",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -64,6 +65,7 @@
         "tags": [
           "Auth"
         ],
+        "operationId": "SignIn",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -113,11 +115,54 @@
         }
       }
     },
+    "/files": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync": {
+      "get": {
+        "tags": [
+          "Sync"
+        ],
+        "operationId": "Sync",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/user": {
       "get": {
         "tags": [
           "User"
         ],
+        "operationId": "GetUser",
         "responses": {
           "200": {
             "description": "Success",
