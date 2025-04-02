@@ -21,9 +21,11 @@ This is a university project.
 
 ## Secrets
 
+### CloudDrive.WebAPI
 `ConnectionStrings:DefaultConnection` - database connection string
 `Jwt:Secret` - JWT signing key, should be at least 32-characters long
 `Jwt:ExpirationMinutes` - JWT token expiration timespan in minutes
+`FsRoot` - root file system directory in which files will be stored
 
 All development secrets are currently stored directly in the repository due to time constraints.
 Realistically you should use `dotnet user-secrets` or `Azure Key Vault` for storing sensitive configuration data.

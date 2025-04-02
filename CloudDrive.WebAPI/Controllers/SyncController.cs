@@ -1,4 +1,8 @@
-﻿using CloudDrive.Infrastructure.Commands;
+﻿using CloudDrive.Core.Services;
+using CloudDrive.Infrastructure.Commands;
+using CloudDrive.Infrastructure.DTO;
+using CloudDrive.WebAPI.Extensions;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,12 +12,29 @@ namespace CloudDrive.WebAPI.Controllers
     [ApiController]
     public class SyncController : ControllerBase
     {
+        private readonly IFileVersionInfoService fileVersionInfoService;
+
+        public SyncController(IFileVersionInfoService fileVersionInfoService)
+        {
+            this.fileVersionInfoService = fileVersionInfoService;
+        }
+
+
         // Return the current server-side state of user's storage
         [HttpGet(Name = "Sync")]
         [Authorize]
         public async Task<ActionResult<SyncGetResponse>> Sync()
         {
-            throw new NotImplementedException();
+            Guid userId = User.GetId();
+            var infoDtos = (await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId))
+                .Select(fv => fv.Adapt<FileVersionDTO>())
+                .ToArray();
+
+            var resp = new SyncGetResponse { 
+                CurrentFileVersionsInfos = infoDtos 
+            };
+
+            return Ok(resp);
         }
     }
 }
