@@ -1,14 +1,25 @@
-﻿using System.Configuration;
-using System.Data;
+﻿using System;
 using System.Windows;
+using System.IO;
 
 namespace CloudDrive.App
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : System.Windows.Application
+    public partial class App : Application
     {
-    }
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
 
+            string settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CloudDrive", "settings.json");
+
+            if (File.Exists(settingsFilePath))
+            {
+                new LoginWindow().Show();
+            }
+            else
+            {
+                new SettingsWindow().Show();
+            }
+        }
+    }
 }
