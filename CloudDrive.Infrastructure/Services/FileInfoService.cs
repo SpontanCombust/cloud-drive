@@ -24,6 +24,8 @@ namespace CloudDrive.Infrastructure.Services
             };
 
             var tracked = (await dbContext.Files.AddAsync(fileInfo)).Entity;
+            await dbContext.SaveChangesAsync();
+
             return tracked;
         }
 

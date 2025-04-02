@@ -34,7 +34,7 @@ namespace CloudDrive.WebAPI.Controllers
         {
             Guid userId = User.GetId();
             Stream fileStream = req.File.OpenReadStream();
-            string fileName = req.File.Name;
+            string fileName = req.File.FileName;
             var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath);
 
             var response = new CreateFileResponse {

@@ -36,10 +36,12 @@ namespace CloudDrive.Infrastructure.Services
                 VersionNr = 0,
                 Md5 = md5Hash,
                 SizeByes = fileSize,
-                CreatedDate = DateTime.Now
+                CreatedDate = DateTime.Now.ToUniversalTime()
             };
 
             var tracked = (await dbContext.FileVersions.AddAsync(info)).Entity;
+            await dbContext.SaveChangesAsync();
+
             return tracked;
         }
 
@@ -65,16 +67,27 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<FileVersion[]> GetInfoForAllLatestUserFileVersions(Guid userId)
         {
-            return await dbContext.Files
-                .Where(f => f.UserId == userId && !f.Deleted)
-                .GroupJoin(
-                    dbContext.FileVersions
-                        .GroupBy(fv => fv.FileId)
-                        .Select(g => g.OrderByDescending(fv => fv.VersionNr).First()),
-                    f => f.FileId,
+            var activeUserFiles = dbContext.Files
+                .Where(f => f.UserId == userId && !f.Deleted);
+
+            var fileAndMaxVersionNr = dbContext.FileVersions
+                .GroupBy(fv => fv.FileId)
+                .Select(g => new
+                {
+                    FileId = g.Key,
+                    MaxVersionNr = g.Max(fv => fv.VersionNr)
+                });
+
+            return await dbContext.FileVersions
+                .Join(
+                    activeUserFiles,
                     fv => fv.FileId,
-                    (f, latestFv) => latestFv
-                ).SelectMany(fv => fv)
+                    f => f.FileId,
+                    (fv, f) => fv)
+                .Join(fileAndMaxVersionNr,
+                    fv => new { FileId = fv.FileId, VersionNr = fv.VersionNr },
+                    f => new { FileId = f.FileId, VersionNr = f.MaxVersionNr },
+                    (fv, _) => fv)
                 .ToArrayAsync();
         }
     }
