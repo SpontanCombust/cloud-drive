@@ -47,12 +47,10 @@ namespace CloudDrive.WebAPI.Controllers
 
         // Get latest version of a given file from the server
         [HttpGet("{fileId}", Name = "GetLatestFileVersion")]
-        [Produces("application/octet-stream")]
-        //TODO return FileResponse instead of raw byte[]
-        //FIXME use annotations to get proper code-gen for the client here and everywhere else
-        //[ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<byte[]>> GetLatestVersion(Guid fileId)
+        //TODO use more of these attributes elsewhere
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLatestVersion(Guid fileId)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -66,17 +64,14 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            //return File(result.FileContent, "application/octet-stream", result.ClientFileName);
-            return result.FileContent;
+            return File(result.FileContent, "application/octet-stream", result.ClientFileName);
         }
 
         // Get a specific version of the file from the server
         [HttpGet("{fileId}/{versionNr}", Name = "GetFileVersion")]
-        [Produces("application/octet-stream")]
-        //TODO return FileResponse instead of raw byte[]
-        //[ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<byte[]>> GetVersion(Guid fileId, int versionNr)
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetVersion(Guid fileId, int versionNr)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -90,8 +85,7 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            //return File(result.FileContent, "application/octet-stream", result.ClientFileName);
-            return result.FileContent;
+            return File(result.FileContent, "application/octet-stream", result.ClientFileName);
         }
     }
 }
