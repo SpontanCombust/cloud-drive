@@ -68,7 +68,7 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
-        public async Task<byte[]?> GetFileVersion(Guid fileId, int versionNr)
+        public async Task<GetFileResult?> GetFileVersion(Guid fileId, int versionNr)
         {
             var info = await fileVersionInfoService.GetInfoForFileVersionByVersionNr(fileId, versionNr);
             if (info == null)
@@ -77,11 +77,23 @@ namespace CloudDrive.Infrastructure.Services
             }
 
             string filePath = Path.Combine(info.ServerDirPath, info.ServerFileName);
+            byte[]? fileContent = await fileSystemService.GetFile(filePath);
+            if (fileContent == null)
+            {
+                return null;
+            }
 
-            return await fileSystemService.GetFile(filePath);
+            var result = new GetFileResult
+            {
+                FileContent = fileContent,
+                ClientDirPath = info.ClientDirPath,
+                ClientFileName = info.ClientFileName
+            };
+
+            return result;
         }
 
-        public async Task<byte[]?> GetLatestFileVersion(Guid fileId)
+        public async Task<GetFileResult?> GetLatestFileVersion(Guid fileId)
         {
             var info = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
             if (info == null)
@@ -90,8 +102,20 @@ namespace CloudDrive.Infrastructure.Services
             }
 
             string filePath = Path.Combine(info.ServerDirPath, info.ServerFileName);
+            byte[]? fileContent = await fileSystemService.GetFile(filePath);
+            if (fileContent == null)
+            {
+                return null;
+            }
 
-            return await fileSystemService.GetFile(filePath);
+            var result = new GetFileResult
+            {
+                FileContent = fileContent,
+                ClientDirPath = info.ClientDirPath,
+                ClientFileName = info.ClientFileName
+            };
+
+            return result;
         }
 
 

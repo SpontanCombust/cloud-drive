@@ -48,6 +48,10 @@ namespace CloudDrive.WebAPI.Controllers
         // Get latest version of a given file from the server
         [HttpGet("{fileId}", Name = "GetLatestFileVersion")]
         [Produces("application/octet-stream")]
+        //TODO return FileResponse instead of raw byte[]
+        //FIXME use annotations to get proper code-gen for the client here and everywhere else
+        //[ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<byte[]>> GetLatestVersion(Guid fileId)
         {
             Guid userId = User.GetId();
@@ -56,18 +60,22 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var bytes = await fileManagerService.GetLatestFileVersion(fileId);
-            if (bytes == null)
+            var result = await fileManagerService.GetLatestFileVersion(fileId);
+            if (result == null)
             {
                 return NotFound();
             }
 
-            return Ok(bytes);
+            //return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+            return result.FileContent;
         }
 
         // Get a specific version of the file from the server
         [HttpGet("{fileId}/{versionNr}", Name = "GetFileVersion")]
         [Produces("application/octet-stream")]
+        //TODO return FileResponse instead of raw byte[]
+        //[ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<byte[]>> GetVersion(Guid fileId, int versionNr)
         {
             Guid userId = User.GetId();
@@ -76,13 +84,14 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var bytes = await fileManagerService.GetFileVersion(fileId, versionNr);
-            if (bytes == null)
+            var result = await fileManagerService.GetFileVersion(fileId, versionNr);
+            if (result == null)
             {
                 return NotFound();
             }
 
-            return Ok(bytes);
+            //return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+            return result.FileContent;
         }
     }
 }
