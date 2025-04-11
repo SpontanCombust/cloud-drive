@@ -1,8 +1,6 @@
 ﻿using CloudDrive.Core.Services;
-using CloudDrive.Infrastructure.Commands;
-using CloudDrive.Infrastructure.DTO;
 using CloudDrive.WebAPI.Extensions;
-using Mapster;
+using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,9 +24,7 @@ namespace CloudDrive.WebAPI.Controllers
         public async Task<ActionResult<SyncGetResponse>> Sync()
         {
             Guid userId = User.GetId();
-            var infoDtos = (await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId))
-                .Select(fv => fv.Adapt<FileVersionDTO>())
-                .ToArray();
+            var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
             var resp = new SyncGetResponse { 
                 CurrentFileVersionsInfos = infoDtos 

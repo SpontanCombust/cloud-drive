@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace CloudDrive.Infrastructure.Commands
+namespace CloudDrive.WebAPI.Model
 {
     public class CreateFileRequest
     {

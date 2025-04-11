@@ -1,6 +1,6 @@
 ﻿using CloudDrive.Infrastructure.DTO;
 
-namespace CloudDrive.Infrastructure.Commands
+namespace CloudDrive.WebAPI.Model
 {
     public class CreateFileResponse
     {

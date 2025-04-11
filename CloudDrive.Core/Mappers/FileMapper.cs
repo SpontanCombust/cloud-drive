@@ -1,0 +1,18 @@
+﻿using CloudDrive.Infrastructure.DTO;
+using Entities = CloudDrive.Core.Domain.Entities;
+
+namespace CloudDrive.Core.Mappers
+{
+    public static class FileMapper
+    {
+        public static FileDTO ToDto(this Entities.File file)
+        {
+            return new FileDTO
+            {
+                FileId = file.FileId,
+                UserId = file.UserId,
+                Deleted = file.Deleted
+            };
+        }
+    }
+}

@@ -53,7 +53,7 @@ namespace CloudDrive.Infrastructure.Services
                 throw new Exception("Invalid credentials");
             }
 
-            var token = tokenProvider.Provide(user);
+            var token = tokenProvider.Provide(user.UserId, user.Email);
 
             return token;
         }

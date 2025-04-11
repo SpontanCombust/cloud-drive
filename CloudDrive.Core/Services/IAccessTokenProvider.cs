@@ -1,9 +1,7 @@
-﻿using CloudDrive.Core.Domain.Entities;
-
-namespace CloudDrive.Core.Services
+﻿namespace CloudDrive.Core.Services
 {
     public interface IAccessTokenProvider
     {
-        string Provide(User user);
+        string Provide(Guid userId, string userEmail);
     }
 }
