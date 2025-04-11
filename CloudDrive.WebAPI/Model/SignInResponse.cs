@@ -1,4 +1,4 @@
-﻿namespace CloudDrive.Infrastructure.Commands
+﻿namespace CloudDrive.WebAPI.Model
 {
     public class SignInResponse
     {

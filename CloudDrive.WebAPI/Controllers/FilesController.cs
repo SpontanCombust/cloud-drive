@@ -1,13 +1,10 @@
 ﻿using CloudDrive.Core.Services;
-using CloudDrive.Infrastructure.Commands;
 using CloudDrive.Infrastructure.DTO;
-using CloudDrive.Infrastructure.Repositories;
 using CloudDrive.WebAPI.Extensions;
+using CloudDrive.WebAPI.Model;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace CloudDrive.WebAPI.Controllers
 {

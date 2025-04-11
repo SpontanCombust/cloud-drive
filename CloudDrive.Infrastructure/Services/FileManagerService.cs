@@ -1,4 +1,5 @@
 ﻿using CloudDrive.Core.Domain.Entities;
+using CloudDrive.Core.DTO;
 using CloudDrive.Core.Services;
 using System.Security.Cryptography;
 
@@ -25,7 +26,7 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<CreateFileResult> CreateFile(Guid userId, Stream inputStream, string fileName, string clientDirPath)
+        public async Task<CreateFileResultDTO> CreateFile(Guid userId, Stream inputStream, string fileName, string clientDirPath)
         {
             User? user = await userService.GetUserById(userId);
             if (user == null)
@@ -59,7 +60,7 @@ namespace CloudDrive.Infrastructure.Services
                 fileSize
             );
 
-            var result = new CreateFileResult
+            var result = new CreateFileResultDTO
             {
                 FileInfo = fileInfo,
                 FirstFileVersionInfo = fileVersionInfo,
@@ -68,7 +69,7 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
-        public async Task<GetFileResult?> GetFileVersion(Guid fileId, int versionNr)
+        public async Task<GetFileResultDTO?> GetFileVersion(Guid fileId, int versionNr)
         {
             var info = await fileVersionInfoService.GetInfoForFileVersionByVersionNr(fileId, versionNr);
             if (info == null)
@@ -83,7 +84,7 @@ namespace CloudDrive.Infrastructure.Services
                 return null;
             }
 
-            var result = new GetFileResult
+            var result = new GetFileResultDTO
             {
                 FileContent = fileContent,
                 ClientDirPath = info.ClientDirPath,
@@ -93,7 +94,7 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
-        public async Task<GetFileResult?> GetLatestFileVersion(Guid fileId)
+        public async Task<GetFileResultDTO?> GetLatestFileVersion(Guid fileId)
         {
             var info = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
             if (info == null)
@@ -108,7 +109,7 @@ namespace CloudDrive.Infrastructure.Services
                 return null;
             }
 
-            var result = new GetFileResult
+            var result = new GetFileResultDTO
             {
                 FileContent = fileContent,
                 ClientDirPath = info.ClientDirPath,

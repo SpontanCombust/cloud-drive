@@ -1,10 +1,10 @@
-﻿using CloudDrive.Core.Domain.Entities;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.Extensions.Configuration;
 using CloudDrive.Core.Services;
+using CloudDrive.Core.Domain.Entities;
 
 namespace CloudDrive.WebAPI.Security
 {
