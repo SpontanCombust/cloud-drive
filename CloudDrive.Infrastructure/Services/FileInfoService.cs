@@ -1,4 +1,6 @@
-﻿using CloudDrive.Core.Services;
+﻿using CloudDrive.Core.Mappers;
+using CloudDrive.Core.Services;
+using CloudDrive.Infrastructure.DTO;
 using CloudDrive.Infrastructure.Repositories;
 using Entities = CloudDrive.Core.Domain.Entities;
 
@@ -14,7 +16,7 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<Entities.File> CreateInfoForNewFile(Guid fileId, Guid userId)
+        public async Task<FileDTO> CreateInfoForNewFile(Guid fileId, Guid userId)
         {
             var fileInfo = new Entities.File
             {
@@ -26,13 +28,13 @@ namespace CloudDrive.Infrastructure.Services
             var tracked = (await dbContext.Files.AddAsync(fileInfo)).Entity;
             await dbContext.SaveChangesAsync();
 
-            return tracked;
+            return tracked.ToDto();
         }
 
-        public async Task<Entities.File?> GetInfoForFile(Guid fileId)
+        public async Task<FileDTO?> GetInfoForFile(Guid fileId)
         {
-            return await dbContext.Files
-                .FindAsync(fileId);
+            var file = await dbContext.Files.FindAsync(fileId);
+            return file?.ToDto();
         }
 
         public async Task<bool> FileBelongsToUser(Guid fileId, Guid userId)

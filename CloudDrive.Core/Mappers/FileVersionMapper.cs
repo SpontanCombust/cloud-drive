@@ -13,6 +13,8 @@ namespace CloudDrive.Core.Mappers
                 FileId = fileVersion.FileId,
                 ClientDirPath = fileVersion.ClientDirPath,
                 ClientFileName = fileVersion.ClientFileName,
+                ServerDirPath = fileVersion.ServerDirPath,
+                ServerFileName = fileVersion.ServerFileName,
                 VersionNr = fileVersion.VersionNr,
                 CreatedDate = fileVersion.CreatedDate,
                 Md5 = fileVersion.Md5,

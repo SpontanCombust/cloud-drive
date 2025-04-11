@@ -1,5 +1,7 @@
 ﻿using CloudDrive.Core.Domain.Entities;
+using CloudDrive.Core.Mappers;
 using CloudDrive.Core.Services;
+using CloudDrive.Infrastructure.DTO;
 using CloudDrive.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +17,7 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<FileVersion> CreateInfoForNewFileVersion(
+        public async Task<FileVersionDTO> CreateInfoForNewFileVersion(
             Guid fileVersionId, 
             Guid fileId, 
             string clientDirPath, 
@@ -42,30 +44,32 @@ namespace CloudDrive.Infrastructure.Services
             var tracked = (await dbContext.FileVersions.AddAsync(info)).Entity;
             await dbContext.SaveChangesAsync();
 
-            return tracked;
+            return tracked.ToDto();
         }
 
-        public async Task<FileVersion?> GetInfoForFileVersion(Guid fileVersionId)
+        public async Task<FileVersionDTO?> GetInfoForFileVersion(Guid fileVersionId)
         {
-            return await dbContext.FileVersions
-                .FindAsync(fileVersionId);
+            var info = await dbContext.FileVersions.FindAsync(fileVersionId);
+            return info?.ToDto();
         }
 
-        public async Task<FileVersion?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr)
+        public async Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr)
         {
-            return await dbContext.FileVersions
+            var info = await dbContext.FileVersions
                 .SingleOrDefaultAsync(fv => fv.FileId == fileId && fv.VersionNr == versionNr);
+            return info?.ToDto();
         }
 
-        public async Task<FileVersion?> GetInfoForLatestFileVersion(Guid fileId)
+        public async Task<FileVersionDTO?> GetInfoForLatestFileVersion(Guid fileId)
         {
-            return await dbContext.FileVersions
+            var info = await dbContext.FileVersions
                 .Where(fv => fv.FileId == fileId)
                 .OrderByDescending(fv => fv.VersionNr)
                 .FirstOrDefaultAsync();
+            return info?.ToDto();
         }
 
-        public async Task<FileVersion[]> GetInfoForAllLatestUserFileVersions(Guid userId)
+        public async Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId)
         {
             var activeUserFiles = dbContext.Files
                 .Where(f => f.UserId == userId && !f.Deleted);
@@ -78,7 +82,7 @@ namespace CloudDrive.Infrastructure.Services
                     MaxVersionNr = g.Max(fv => fv.VersionNr)
                 });
 
-            return await dbContext.FileVersions
+            var infos = await dbContext.FileVersions
                 .Join(
                     activeUserFiles,
                     fv => fv.FileId,
@@ -89,6 +93,8 @@ namespace CloudDrive.Infrastructure.Services
                     f => new { FileId = f.FileId, VersionNr = f.MaxVersionNr },
                     (fv, _) => fv)
                 .ToArrayAsync();
+
+            return infos.Select(i => i.ToDto()).ToArray();
         }
     }
 }

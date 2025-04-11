@@ -1,10 +1,10 @@
-﻿using Entities = CloudDrive.Core.Domain.Entities;
+﻿using CloudDrive.Infrastructure.DTO;
 
 namespace CloudDrive.Core.Services
 {
     public interface IFileVersionInfoService
     {
-        Task<Entities.FileVersion> CreateInfoForNewFileVersion(
+        Task<FileVersionDTO> CreateInfoForNewFileVersion(
             Guid fileVersionId,
             Guid fileId, 
             string clientDirPath, 
@@ -14,9 +14,9 @@ namespace CloudDrive.Core.Services
             string md5Hash,
             long fileSize
         );
-        Task<Entities.FileVersion?> GetInfoForFileVersion(Guid fileVersionId);
-        Task<Entities.FileVersion?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr);
-        Task<Entities.FileVersion?> GetInfoForLatestFileVersion(Guid fileId);
-        Task<Entities.FileVersion[]> GetInfoForAllLatestUserFileVersions(Guid userId);
+        Task<FileVersionDTO?> GetInfoForFileVersion(Guid fileVersionId);
+        Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr);
+        Task<FileVersionDTO?> GetInfoForLatestFileVersion(Guid fileId);
+        Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId);
     }
 }

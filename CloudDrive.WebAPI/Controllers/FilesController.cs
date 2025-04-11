@@ -35,8 +35,8 @@ namespace CloudDrive.WebAPI.Controllers
             var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath);
 
             var response = new CreateFileResponse {
-                FileInfo = result.FileInfo.ToDto(),
-                FirstFileVersionInfo = result.FirstFileVersionInfo.ToDto()
+                FileInfo = result.FileInfo,
+                FirstFileVersionInfo = result.FirstFileVersionInfo
             };
 
             return Ok(response);

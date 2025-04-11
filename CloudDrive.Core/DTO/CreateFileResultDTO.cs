@@ -1,11 +1,10 @@
-﻿using CloudDrive.Core.Domain.Entities;
-using Entities = CloudDrive.Core.Domain.Entities;
+﻿using CloudDrive.Infrastructure.DTO;
 
 namespace CloudDrive.Core.DTO
 {
     public class CreateFileResultDTO
     {
-        public required Entities.File FileInfo { get; set; }
-        public required FileVersion FirstFileVersionInfo { get; set; }
+        public required FileDTO FileInfo { get; set; }
+        public required FileVersionDTO FirstFileVersionInfo { get; set; }
     }
 }
