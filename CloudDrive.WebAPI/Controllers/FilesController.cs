@@ -1,8 +1,8 @@
 ﻿using CloudDrive.Core.Services;
+using CloudDrive.Core.Mappers;
 using CloudDrive.Infrastructure.DTO;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
-using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,8 +35,8 @@ namespace CloudDrive.WebAPI.Controllers
             var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath);
 
             var response = new CreateFileResponse {
-                FileInfo = result.FileInfo.Adapt<FileDTO>(),
-                FirstFileVersionInfo = result.FirstFileVersionInfo.Adapt<FileVersionDTO>()
+                FileInfo = result.FileInfo.ToDto(),
+                FirstFileVersionInfo = result.FirstFileVersionInfo.ToDto()
             };
 
             return Ok(response);
