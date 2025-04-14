@@ -6,18 +6,20 @@
         xmlns:local="clr-namespace:CloudDrive.App"
         mc:Ignorable="d"
         Title="Konfiguracja" Height="300" Width="400">
-    <Grid>
-        <StackPanel Margin="10">
-            <Label Content="Adres URL serwera:" />
-            <TextBox Name="ServerUrlTextBox" Width="250" Height="25"/>
+	<Grid Background="#FAFAFA">
+		<StackPanel Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+			<Label Content="Adres URL serwera:" />
+			<TextBox x:Name="ServerUrlTextBox" Width="300" Height="30" Margin="0,0,0,10" VerticalContentAlignment="Center"
+             HorizontalContentAlignment="Left"/>
 
-            <Label Content="Ścieżka folderu:" />
-            <TextBox Name="FolderPathTextBox" Width="250" Height="25"/>
+			<Label Content="Ścieżka folderu lokalnego:" />
+			<TextBox x:Name="FolderPathTextBox" Width="300" Height="30" Margin="0,0,0,10" VerticalContentAlignment="Center"
+             HorizontalContentAlignment="Left"/>
 
-            <UniformGrid Grid.Row="2" Columns="1" Margin="0,15,0,0" Height="80">
-                <Button Content="Wybierz folder" Width="180" Height="30" Click="Folder_Click"/>
-                <Button Content="Zapisz ustawienia" Width="180" Height="30" Click="SaveSettingsButton_Click" Margin="0,10,0,0" />
-            </UniformGrid>
-        </StackPanel>
-    </Grid>
+			<Button Content="Wybierz folder" Click="Folder_Click" Width="300" Height="30" Margin="0,0,0,10"/>
+			<Button Content="Zapisz ustawienia" Click="SaveSettingsButton_Click" Width="300" Height="30" Margin="0,0,0,10"/>
+
+			<TextBlock x:Name="SettingsStatusTextBlock" Foreground="Red" TextAlignment="Center" FontWeight="Bold" Height="30"/>
+		</StackPanel>
+	</Grid>
 </Window>
