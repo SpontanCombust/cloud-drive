@@ -14,9 +14,8 @@ This is a university project.
 1. Bring up development database using docker-compose: `docker compose --profile dev up`.
 2. Open the project in Visual Studio.
 3. Open the `Package Manager Console` view.
-4. Enter `Update-Database` and execute. This will get your local DB up to date with the current schema.
-5. Launch `CloudDrive.WebAPI` to start the REST server
-6. Launch `CloudDrive.App` to start the client application
+4. Choose `CloudDrive.Infrastructure` as the default project.
+5. Enter `Update-Database` and execute. This will get your local DB up to date with the current schema.
 
 
 ## Secrets
