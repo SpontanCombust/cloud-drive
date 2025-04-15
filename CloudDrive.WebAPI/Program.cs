@@ -59,6 +59,10 @@ builder.Services.AddScoped<IAccessTokenProvider, JwtAccessTokenProvider>();
 builder.Services.AddScoped<IPasswordEncoder, BCryptPasswordEncoder>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IFileInfoService, FileInfoService>();
+builder.Services.AddScoped<IFileVersionInfoService, FileVersionInfoService>();
+builder.Services.AddScoped<IFileSystemService, FileSystemService>();
+builder.Services.AddScoped<IFileManagerService, FileManagerService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

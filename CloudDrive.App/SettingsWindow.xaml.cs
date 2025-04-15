@@ -47,10 +47,10 @@ namespace CloudDrive.App
 
         private void Folder_Click(object sender, RoutedEventArgs e)
         {
-            var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var folderDialog = new Microsoft.Win32.OpenFolderDialog();
+            if (folderDialog.ShowDialog() ?? false)
             {
-                FolderPathTextBox.Text = folderDialog.SelectedPath;
+                FolderPathTextBox.Text = folderDialog.FolderName;
             }
         }
 

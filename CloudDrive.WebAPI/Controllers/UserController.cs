@@ -1,8 +1,8 @@
 ﻿using CloudDrive.Core.Services;
+using CloudDrive.Core.Mappers;
 using CloudDrive.Infrastructure.DTO;
 using CloudDrive.Infrastructure.Repositories;
 using CloudDrive.WebAPI.Extensions;
-using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +33,7 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var dto = user.Adapt<UserDTO>();
+            var dto = user.ToDto();
             return Ok(dto);
         }
     }

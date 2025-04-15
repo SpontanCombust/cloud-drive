@@ -1,5 +1,4 @@
-﻿using CloudDrive.Core.Domain.Entities;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -17,7 +16,7 @@ namespace CloudDrive.WebAPI.Security
             this.configuration = configuration;
         }
 
-        public string Provide(User user)
+        public string Provide(Guid userId, string userEmail)
         {
             string secretKey = configuration.GetValue<string>("Jwt:Secret") ?? "";
             int keyExpiration = configuration.GetValue<int>("Jwt:ExpirationMinutes");
@@ -28,8 +27,8 @@ namespace CloudDrive.WebAPI.Security
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity([
-                    new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                    new Claim(JwtRegisteredClaimNames.Email, user.Email)
+                    new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                    new Claim(JwtRegisteredClaimNames.Email, userEmail)
                 ]),
                 Expires = DateTime.UtcNow.AddMinutes(keyExpiration),
                 SigningCredentials = credentials
