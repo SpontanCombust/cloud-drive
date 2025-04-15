@@ -21,16 +21,26 @@ namespace CloudDrive.WebAPI.Controllers
         // Return the current server-side state of user's storage
         [HttpGet(Name = "Sync")]
         [Authorize]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<SyncGetResponse>> Sync()
         {
             Guid userId = User.GetId();
-            var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
-            var resp = new SyncGetResponse { 
-                CurrentFileVersionsInfos = infoDtos 
-            };
+            try
+            {
+                var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
-            return Ok(resp);
+                var resp = new SyncGetResponse
+                {
+                    CurrentFileVersionsInfos = infoDtos
+                };
+
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }   
         }
     }
 }

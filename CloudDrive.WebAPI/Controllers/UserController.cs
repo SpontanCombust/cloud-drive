@@ -24,6 +24,7 @@ namespace CloudDrive.WebAPI.Controllers
 
 
         [HttpGet(Name = "GetUser")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDTO>> Get()
         {
             var userId = User.GetId();

@@ -17,6 +17,7 @@ namespace CloudDrive.WebAPI.Controllers
 
 
         [HttpPost("signup", Name = "SignUp")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<SignUpResponse>> SignUp([FromForm] SignUpRequest req)
         {
             try
@@ -32,6 +33,7 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
         [HttpPost("signin", Name = "SignIn")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<SignInResponse>> SignIn([FromForm] SignInRequest req)
         {
             try
