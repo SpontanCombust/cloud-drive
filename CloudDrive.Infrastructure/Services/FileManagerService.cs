@@ -26,7 +26,7 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<CreateFileResultDTO> CreateFile(Guid userId, Stream inputStream, string fileName, string clientDirPath)
+        public async Task<CreateFileResultDTO> CreateFile(Guid userId, Stream? inputStream, string fileName, string? clientDirPath, bool isDir)
         {
             User? user = await userService.GetUserById(userId);
             if (user == null)
@@ -36,19 +36,41 @@ namespace CloudDrive.Infrastructure.Services
 
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
-            string newFileVersionServerPath = await fileSystemService.AllocatePathForFile(userId, newFileVersionId);
-            string newFileVersionServerDirPath = Path.GetDirectoryName(newFileVersionServerPath)!;
-            string newFileVersionServerFileName = Path.GetFileName(newFileVersionServerPath);
+            string? newFileVersionServerDirPath = null;
+            string? newFileVersionServerFileName = null;
+            string? hash = null;
+            long? fileSize = null;
 
-            await fileSystemService.CreateFile(newFileVersionServerPath, inputStream);
+            if (isDir)
+            {
+                if (inputStream != null)
+                {
+                    // we could just ignore the file stream, but being explicit with an exception
+                    // makes sure that client knows it's pointless for a directory
+                    throw new InvalidOperationException("No data should be sent when the subject is a directory");
+                }
+            }
+            else
+            {
+                if (inputStream == null)
+                {
+                    throw new InvalidOperationException("File is required for a non-directory file");
+                }
 
-            inputStream.Seek(0, SeekOrigin.Begin);
-            string hash = await CalculateFileHash(inputStream);
+                string newFileVersionServerPath = await fileSystemService.AllocatePathForFile(userId, newFileVersionId);
+                newFileVersionServerDirPath = Path.GetDirectoryName(newFileVersionServerPath)!;
+                newFileVersionServerFileName = Path.GetFileName(newFileVersionServerPath);
 
-            inputStream.Seek(0, SeekOrigin.Begin);
-            long fileSize = inputStream.Length;
+                await fileSystemService.CreateFile(newFileVersionServerPath, inputStream);
 
-            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId);
+                inputStream.Seek(0, SeekOrigin.Begin);
+                hash = await CalculateFileHash(inputStream);
+
+                inputStream.Seek(0, SeekOrigin.Begin);
+                fileSize = inputStream.Length;
+            }
+
+            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, isDir);
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 newFileId,
@@ -71,24 +93,31 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<GetFileResultDTO?> GetFileVersion(Guid fileId, int versionNr)
         {
-            var info = await fileVersionInfoService.GetInfoForFileVersionByVersionNr(fileId, versionNr);
+            var info = await fileInfoService.GetInfoForFile(fileId);
             if (info == null)
             {
                 return null;
             }
 
-            string filePath = Path.Combine(info.ServerDirPath, info.ServerFileName);
-            byte[]? fileContent = await fileSystemService.GetFile(filePath);
-            if (fileContent == null)
+            var verInfo = await fileVersionInfoService.GetInfoForFileVersionByVersionNr(fileId, versionNr);
+            if (verInfo == null)
             {
                 return null;
             }
 
+            byte[]? fileContent = null;
+            if (!info.IsDir && verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
+            {
+                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                fileContent = await fileSystemService.GetFile(filePath);
+            }
+
             var result = new GetFileResultDTO
             {
+                IsDir = info.IsDir,
                 FileContent = fileContent,
-                ClientDirPath = info.ClientDirPath,
-                ClientFileName = info.ClientFileName
+                ClientDirPath = verInfo.ClientDirPath,
+                ClientFileName = verInfo.ClientFileName
             };
 
             return result;
@@ -96,24 +125,31 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<GetFileResultDTO?> GetLatestFileVersion(Guid fileId)
         {
-            var info = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
+            var info = await fileInfoService.GetInfoForFile(fileId);
             if (info == null)
             {
                 return null;
             }
 
-            string filePath = Path.Combine(info.ServerDirPath, info.ServerFileName);
-            byte[]? fileContent = await fileSystemService.GetFile(filePath);
-            if (fileContent == null)
+            var verInfo = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
+            if (verInfo == null)
             {
                 return null;
             }
 
+            byte[]? fileContent = null;
+            if (!info.IsDir && verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
+            {
+                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                fileContent = await fileSystemService.GetFile(filePath);
+            }
+
             var result = new GetFileResultDTO
             {
+                IsDir = info.IsDir,
                 FileContent = fileContent,
-                ClientDirPath = info.ClientDirPath,
-                ClientFileName = info.ClientFileName
+                ClientDirPath = verInfo.ClientDirPath,
+                ClientFileName = verInfo.ClientFileName
             };
 
             return result;

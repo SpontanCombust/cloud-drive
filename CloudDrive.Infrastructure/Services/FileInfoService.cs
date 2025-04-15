@@ -16,12 +16,13 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<FileDTO> CreateInfoForNewFile(Guid fileId, Guid userId)
+        public async Task<FileDTO> CreateInfoForNewFile(Guid fileId, Guid userId, bool isDir)
         {
             var fileInfo = new Entities.File
             {
                 FileId = fileId,
                 UserId = userId,
+                IsDir = isDir,
                 Deleted = false,
             };
 

@@ -1,6 +1,4 @@
 ﻿using CloudDrive.Core.Services;
-using CloudDrive.Core.Mappers;
-using CloudDrive.Infrastructure.DTO;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -27,25 +25,36 @@ namespace CloudDrive.WebAPI.Controllers
 
         // Upload new file to the server
         [HttpPost(Name = "CreateFile")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<CreateFileResponse>> Create([FromForm] CreateFileRequest req)
         {
             Guid userId = User.GetId();
-            Stream fileStream = req.File.OpenReadStream();
-            string fileName = req.File.FileName;
-            var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath);
+            Stream? fileStream = req.File?.OpenReadStream();
+            string fileName = req.ClientFileName;
 
-            var response = new CreateFileResponse {
-                FileInfo = result.FileInfo,
-                FirstFileVersionInfo = result.FirstFileVersionInfo
-            };
+            try
+            {
+                var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath, req.IsDirectory);
 
-            return Ok(response);
+                var response = new CreateFileResponse
+                {
+                    FileInfo = result.FileInfo,
+                    FirstFileVersionInfo = result.FirstFileVersionInfo
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }            
         }
 
         // Get latest version of a given file from the server
         [HttpGet("{fileId}", Name = "GetLatestFileVersion")]
         //TODO use more of these attributes elsewhere
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetLatestVersion(Guid fileId)
         {
@@ -55,18 +64,34 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var result = await fileManagerService.GetLatestFileVersion(fileId);
-            if (result == null)
+            try
             {
-                return NotFound();
-            }
+                var result = await fileManagerService.GetLatestFileVersion(fileId);
+                if (result == null)
+                {
+                    return NotFound();
+                }
+                else if (result.IsDir)
+                {
+                    return BadRequest("Downloading directories is not supported");
+                }
+                else if (result.FileContent == null)
+                {
+                    return NotFound();
+                }
 
-            return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+                return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // Get a specific version of the file from the server
         [HttpGet("{fileId}/{versionNr}", Name = "GetFileVersion")]
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetVersion(Guid fileId, int versionNr)
         {
@@ -76,13 +101,28 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var result = await fileManagerService.GetFileVersion(fileId, versionNr);
-            if (result == null)
+            try
             {
-                return NotFound();
-            }
+                var result = await fileManagerService.GetFileVersion(fileId, versionNr);
+                if (result == null)
+                {
+                    return NotFound();
+                }
+                else if (result.IsDir)
+                {
+                    return BadRequest("Downloading directories is not supported");
+                }
+                else if (result.FileContent == null)
+                {
+                    return NotFound();
+                }
 
-            return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+                return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

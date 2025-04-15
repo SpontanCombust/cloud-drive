@@ -4,7 +4,7 @@ namespace CloudDrive.Core.Services
 {
     public interface IFileManagerService
     {
-        Task<CreateFileResultDTO> CreateFile(Guid userId, Stream inputStream, string fileName, string clientDirPath);
+        Task<CreateFileResultDTO> CreateFile(Guid userId, Stream? inputStream, string fileName, string? clientDirPath, bool isDir);
         Task<GetFileResultDTO?> GetFileVersion(Guid fileId, int versionNr);
         Task<GetFileResultDTO?> GetLatestFileVersion(Guid fileId);
     }
