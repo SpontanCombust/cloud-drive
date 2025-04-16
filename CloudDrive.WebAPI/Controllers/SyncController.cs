@@ -10,15 +10,23 @@ namespace CloudDrive.WebAPI.Controllers
     [ApiController]
     public class SyncController : ControllerBase
     {
+        private readonly IFileInfoService fileInfoService;
         private readonly IFileVersionInfoService fileVersionInfoService;
 
-        public SyncController(IFileVersionInfoService fileVersionInfoService)
+        public SyncController(
+            IFileInfoService fileInfoService,
+            IFileVersionInfoService fileVersionInfoService)
         {
+            this.fileInfoService = fileInfoService;
             this.fileVersionInfoService = fileVersionInfoService;
         }
 
 
-        // Return the current server-side state of user's storage
+        //TODO rename to SyncAll
+        //TODO add query params to search through deleted as well
+        /// <summary>
+        /// Return the current server-side state of user's storage
+        /// </summary>
         [HttpGet(Name = "Sync")]
         [Authorize]
         public async Task<ActionResult<SyncGetResponse>> Sync()
@@ -31,6 +39,39 @@ namespace CloudDrive.WebAPI.Controllers
             };
 
             return Ok(resp);
+        }
+
+        /// <summary>
+        /// Return the current server-side state of a specific file
+        /// </summary>
+        [HttpGet("{fileId}", Name = "SyncFile")]
+        [Authorize]
+        [ProducesResponseType(typeof(SyncFileResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<SyncFileResponse>> SyncFile([FromRoute] Guid fileId)
+        {
+            Guid userId = User.GetId();
+
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId);
+            if (fileInfo == null || fileInfo.UserId != userId)
+            {
+                return NotFound();
+            }
+
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
+            if (fileVersionInfo != null)
+            {
+                var resp = new SyncFileResponse 
+                { 
+                    FileInfo = fileInfo,
+                    CurrentFileVersionInfo = fileVersionInfo 
+                };
+                return Ok(resp);
+            }
+            else
+            {
+                return NotFound();
+            }
         }
     }
 }
