@@ -7,5 +7,6 @@
         public bool Deleted {  get; set; }
 
         public User User { get; set; }
+        public ICollection<FileVersion> FileVersions { get; set; }
     }
 }
