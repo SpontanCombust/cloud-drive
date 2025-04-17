@@ -18,7 +18,7 @@ namespace CloudDrive.Core.Mappers
                 VersionNr = fileVersion.VersionNr,
                 CreatedDate = fileVersion.CreatedDate,
                 Md5 = fileVersion.Md5,
-                SizeByes = fileVersion.SizeByes,
+                SizeBytes = fileVersion.SizeBytes,
             };
         }
     }

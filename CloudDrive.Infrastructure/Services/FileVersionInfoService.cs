@@ -43,7 +43,7 @@ namespace CloudDrive.Infrastructure.Services
                 ServerFileName = serverFileName,
                 VersionNr = newVersionNr,
                 Md5 = md5Hash,
-                SizeByes = fileSize,
+                SizeBytes = fileSize,
                 CreatedDate = DateTime.Now.ToUniversalTime()
             };
 
@@ -109,7 +109,7 @@ namespace CloudDrive.Infrastructure.Services
         {
             var info = await dbContext.FileVersions
                 .Include(fv => fv.File)
-                .Where(fv => fv.File.UserId == userId && fv.Md5 == md5Hash && fv.SizeByes == fileSize)
+                .Where(fv => fv.File.UserId == userId && fv.Md5 == md5Hash && fv.SizeBytes == fileSize)
                 .FirstOrDefaultAsync();
 
             return info?.ToDto();
