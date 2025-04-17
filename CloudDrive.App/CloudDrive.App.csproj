@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -29,7 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CloudDrive.Core\CloudDrive.Core.csproj" />
-    <ProjectReference Include="..\CloudDrive.Infrastructure\CloudDrive.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
