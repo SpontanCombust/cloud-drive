@@ -22,19 +22,18 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
 
-        //TODO rename to SyncAll
         //TODO add query params to search through deleted as well
         /// <summary>
         /// Return the current server-side state of user's storage
         /// </summary>
-        [HttpGet(Name = "Sync")]
+        [HttpGet(Name = "SyncAll")]
         [Authorize]
-        public async Task<ActionResult<SyncGetResponse>> Sync()
+        public async Task<ActionResult<SyncAllResponse>> SyncAll()
         {
             Guid userId = User.GetId();
             var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
-            var resp = new SyncGetResponse { 
+            var resp = new SyncAllResponse { 
                 CurrentFileVersionsInfos = infoDtos 
             };
 

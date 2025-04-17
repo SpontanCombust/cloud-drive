@@ -2,8 +2,7 @@
 
 namespace CloudDrive.WebAPI.Model
 {
-    //TODO rename to SyncAllResponse
-    public class SyncGetResponse
+    public class SyncAllResponse
     {
         public required FileVersionDTO[] CurrentFileVersionsInfos { get; set; }
     }
