@@ -1,4 +1,4 @@
-﻿namespace CloudDrive.Infrastructure.DTO
+﻿namespace CloudDrive.Core.DTO
 {
     public class FileDTO
     {

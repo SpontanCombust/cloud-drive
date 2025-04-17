@@ -1,4 +1,4 @@
-﻿using CloudDrive.Infrastructure.DTO;
+﻿using CloudDrive.Core.DTO;
 
 namespace CloudDrive.Core.Services
 {
@@ -18,5 +18,9 @@ namespace CloudDrive.Core.Services
         Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr);
         Task<FileVersionDTO?> GetInfoForLatestFileVersion(Guid fileId);
         Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId);
+        /// <summary>
+        /// Find if for a user there ever was a file version with these exact same content characteristics
+        /// </summary>
+        Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize);
     }
 }

@@ -1,6 +1,4 @@
 ﻿using CloudDrive.Core.Services;
-using CloudDrive.Core.Mappers;
-using CloudDrive.Infrastructure.DTO;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -83,6 +81,60 @@ namespace CloudDrive.WebAPI.Controllers
             }
 
             return File(result.FileContent, "application/octet-stream", result.ClientFileName);
+        }
+
+        [HttpPut("{fileId}", Name = "UpdateFile")]
+        [ProducesResponseType(typeof(UpdateFileResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<UpdateFileResponse>> Update([FromRoute] Guid fileId, [FromForm] UpdateFileRequest req)
+        {
+            Guid userId = User.GetId();
+            if (!await fileInfoService.FileBelongsToUser(fileId, userId))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                Stream fileStream = req.File.OpenReadStream();
+                string fileName = req.File.FileName;
+                var result = await fileManagerService.UpdateFile(fileId, fileStream, fileName, req.ClientDirPath);
+
+                var resp = new UpdateFileResponse
+                {
+                    NewFileVersionInfo = result
+                };
+
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("{fileId}", Name = "DeleteFile")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete([FromRoute] Guid fileId)
+        {
+            Guid userId = User.GetId();
+            if (!await fileInfoService.FileBelongsToUser(fileId, userId))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                await fileManagerService.DeleteFile(fileId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

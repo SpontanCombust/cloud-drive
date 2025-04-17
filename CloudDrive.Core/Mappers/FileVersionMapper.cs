@@ -1,4 +1,4 @@
-﻿using CloudDrive.Infrastructure.DTO;
+﻿using CloudDrive.Core.DTO;
 using Entities = CloudDrive.Core.Domain.Entities;
 
 namespace CloudDrive.Core.Mappers
@@ -9,7 +9,7 @@ namespace CloudDrive.Core.Mappers
         {
             return new FileVersionDTO
             {
-                FileVersionId = fileVersion.FileId,
+                FileVersionId = fileVersion.FileVersionId,
                 FileId = fileVersion.FileId,
                 ClientDirPath = fileVersion.ClientDirPath,
                 ClientFileName = fileVersion.ClientFileName,
@@ -18,7 +18,7 @@ namespace CloudDrive.Core.Mappers
                 VersionNr = fileVersion.VersionNr,
                 CreatedDate = fileVersion.CreatedDate,
                 Md5 = fileVersion.Md5,
-                SizeByes = fileVersion.SizeByes,
+                SizeBytes = fileVersion.SizeBytes,
             };
         }
     }

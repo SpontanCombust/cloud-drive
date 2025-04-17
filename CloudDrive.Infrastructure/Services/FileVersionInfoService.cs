@@ -1,7 +1,7 @@
 ﻿using CloudDrive.Core.Domain.Entities;
+using CloudDrive.Core.DTO;
 using CloudDrive.Core.Mappers;
 using CloudDrive.Core.Services;
-using CloudDrive.Infrastructure.DTO;
 using CloudDrive.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +27,12 @@ namespace CloudDrive.Infrastructure.Services
             string md5Hash, 
             long fileSize)
         {
+            int newVersionNr = await dbContext.FileVersions
+                .Where(fv => fv.FileId == fileId)
+                .OrderByDescending(fv => fv.VersionNr)
+                .Select(fv => fv.VersionNr + 1)
+                .FirstOrDefaultAsync();
+
             var info = new FileVersion
             {
                 FileVersionId = fileVersionId,
@@ -35,9 +41,9 @@ namespace CloudDrive.Infrastructure.Services
                 ClientFileName = clientFileName,
                 ServerDirPath = serverDirPath,
                 ServerFileName = serverFileName,
-                VersionNr = 0,
+                VersionNr = newVersionNr,
                 Md5 = md5Hash,
-                SizeByes = fileSize,
+                SizeBytes = fileSize,
                 CreatedDate = DateTime.Now.ToUniversalTime()
             };
 
@@ -71,6 +77,8 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId)
         {
+            //FIXME client can't distinguish between new and to-be-deleted files; the info for deleted files should still be sent in some way
+
             var activeUserFiles = dbContext.Files
                 .Where(f => f.UserId == userId && !f.Deleted);
 
@@ -95,6 +103,16 @@ namespace CloudDrive.Infrastructure.Services
                 .ToArrayAsync();
 
             return infos.Select(i => i.ToDto()).ToArray();
+        }
+
+        public async Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
+        {
+            var info = await dbContext.FileVersions
+                .Include(fv => fv.File)
+                .Where(fv => fv.File.UserId == userId && fv.Md5 == md5Hash && fv.SizeBytes == fileSize)
+                .FirstOrDefaultAsync();
+
+            return info?.ToDto();
         }
     }
 }
