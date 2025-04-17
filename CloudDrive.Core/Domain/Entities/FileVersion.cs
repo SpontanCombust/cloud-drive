@@ -10,7 +10,7 @@
         public string ServerFileName { get; set; }
         public int VersionNr {  get; set; }
         public string Md5 { get; set; }
-        public long SizeByes { get; set; }
+        public long SizeByes { get; set; } //FIXME typo
         public DateTime CreatedDate { get; set; }
 
         public File File { get; set; }

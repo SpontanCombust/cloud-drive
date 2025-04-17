@@ -9,7 +9,7 @@ namespace CloudDrive.Core.Mappers
         {
             return new FileVersionDTO
             {
-                FileVersionId = fileVersion.FileId,
+                FileVersionId = fileVersion.FileVersionId,
                 FileId = fileVersion.FileId,
                 ClientDirPath = fileVersion.ClientDirPath,
                 ClientFileName = fileVersion.ClientFileName,

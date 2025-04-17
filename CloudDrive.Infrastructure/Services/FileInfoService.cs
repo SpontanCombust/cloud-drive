@@ -39,8 +39,19 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<bool> FileBelongsToUser(Guid fileId, Guid userId)
         {
-            var info = await GetInfoForFile(fileId);
+            var info = await dbContext.Files.FindAsync(fileId);
             return info?.UserId == userId;
+        }
+
+        public async Task<FileDTO> UpdateInfoForFile(Guid fileId, bool deleted)
+        {
+            //TODO add custom standard exception types
+            var tracked = await dbContext.Files.FindAsync(fileId) ?? throw new Exception("File not found");
+
+            tracked.Deleted = deleted;
+            await dbContext.SaveChangesAsync();
+
+            return tracked.ToDto();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿namespace CloudDrive.Infrastructure.DTO
+﻿//FIXME wrong namespace
+namespace CloudDrive.Infrastructure.DTO
 {
     public class FileDTO
     {
