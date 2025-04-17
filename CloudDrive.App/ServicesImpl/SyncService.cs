@@ -1,12 +1,13 @@
-﻿using System.IO;
+﻿using CloudDrive.App.Services;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Windows;
 
 
-namespace CloudDrive.App
+namespace CloudDrive.App.ServicesImpl
 {
-    public class SyncService
+    public class SyncService : ISyncService
     {
 
         private readonly WebAPIClient Api;
@@ -25,7 +26,7 @@ namespace CloudDrive.App
 
             Api = new WebAPIClient(serverUrl, client);
         }
-        public async Task SynchronizeAsync()
+        public async Task SynchronizeAllAsync()
         {
             if (string.IsNullOrEmpty(_folderPath) || !Directory.Exists(_folderPath))
                 throw new Exception("Ścieżka do folderu nie została ustawiona lub nie istnieje.");
@@ -102,7 +103,7 @@ namespace CloudDrive.App
         }
 
 
-        private async Task<FileVersionDTO> UploadFileAsync(string filePath)
+        public async Task<FileVersionDTO> UploadFileAsync(string filePath)
         {
             if (string.IsNullOrEmpty(filePath)) return null;
 
@@ -143,7 +144,7 @@ namespace CloudDrive.App
         }
 
 
-        private async Task DownloadFileAsync(string fileId, string destinationPath)
+        public async Task DownloadFileAsync(string fileId, string destinationPath)
         {
             if (string.IsNullOrEmpty(fileId))
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.IO;
+using CloudDrive.App.Views;
 
 namespace CloudDrive.App
 {

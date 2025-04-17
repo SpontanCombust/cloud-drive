@@ -18,7 +18,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 
-namespace CloudDrive.App
+namespace CloudDrive.App.Views
 {
     public partial class SettingsWindow : Window
     {
