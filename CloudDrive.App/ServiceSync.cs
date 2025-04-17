@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 
 namespace CloudDrive.App
@@ -36,7 +31,7 @@ namespace CloudDrive.App
                 throw new Exception("Ścieżka do folderu nie została ustawiona lub nie istnieje.");
 
             // Pobieranie metadanych z serwera (pliki)
-            var response = await Api.SyncAsync();
+            var response = await Api.SyncAllAsync();
             var serverFiles = response.CurrentFileVersionsInfos;
             var serverFileMap = serverFiles.ToDictionary(f => f.FileId, f => f.ClientDirPath);
 
@@ -113,14 +108,12 @@ namespace CloudDrive.App
 
             try
             {
-                // Otwieramy plik i przygotowujemy jego strumień do wysłania
                 using var fileStream = File.OpenRead(filePath);
                 var fileName = Path.GetFileName(filePath);
 
                 // Wyciągamy ścieżkę katalogu
                 var clientDirPath = Path.GetDirectoryName(filePath)?.Replace(_folderPath, "")?.Trim(Path.DirectorySeparatorChar) ?? "";
 
-                // Jeśli ścieżka katalogu jest pusta, zgłaszamy błąd
                 if (string.IsNullOrEmpty(clientDirPath))
                 {
                     MessageBox.Show("Nie można znaleźć katalogu docelowego dla pliku.");
@@ -130,29 +123,11 @@ namespace CloudDrive.App
                 // Tworzymy obiekt FileParameter, który zawiera plik do przesłania
                 var fileParam = new FileParameter(fileStream, fileName, "application/octet-stream");
 
-                // Wysyłamy plik na serwer i otrzymujemy odpowiedź (tutaj CreateFileResponse)
                 var result = await Api.CreateFileAsync(fileParam, clientDirPath);
 
                 if (result != null)
                 {
-                    // Otrzymujemy FileId z odpowiedzi serwera
-                    var fileId = result.FileId;
-
-                    // Tworzymy FileVersionDTO zawierający ID pliku i inne metadane
-                    var fileVersion = new FileVersionDTO
-                    {
-                        FileId = fileId,              // Identyfikator pliku otrzymany z odpowiedzi
-                        FileVersionId = result.FileVersionId,
-                        ClientDirPath = clientDirPath,
-                        ClientFileName = fileName,
-                        VersionNr = result.VersionNr,
-                        Md5 = result.Md5,
-                        SizeBytes = result.SizeBytes,
-                        CreatedDate = result.CreatedDate
-                    };
-
-                    // Zwracamy obiekt FileVersionDTO zawierający metadane pliku
-                    return fileVersion;
+                    return result.FirstFileVersionInfo;
                 }
                 else
                 {
@@ -184,19 +159,12 @@ namespace CloudDrive.App
 
             try
             {
-                // Zakładam, że GetLatestFileVersionAsync zwraca obiekt, który zawiera dane pliku w formie strumienia lub bajtów
                 var fileResponse = await Api.GetLatestFileVersionAsync(fileGuid);
 
-                // Sprawdź, jak wygląda struktura odpowiedzi i jak uzyskać dane pliku
-                if (fileResponse != null && fileResponse.FileBytes != null)
+                using (var fileStream = File.Create(destinationPath))
                 {
-                    // Jeśli masz dane w postaci bajtów, zapisz je do pliku
-                    await File.WriteAllBytesAsync(destinationPath, fileResponse.FileBytes);
+                    await fileResponse.Stream.CopyToAsync(fileStream);
                     MessageBox.Show($"Pobrano plik do: {destinationPath}");
-                }
-                else
-                {
-                    MessageBox.Show("Nie udało się pobrać pliku. Brak danych.");
                 }
             }
             catch (Exception ex)
