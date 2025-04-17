@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-//FIXME wrong namespace
-namespace CloudDrive.Infrastructure.DTO
+namespace CloudDrive.Core.DTO
 {
     public class FileVersionDTO
     {

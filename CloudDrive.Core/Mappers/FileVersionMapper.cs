@@ -1,4 +1,4 @@
-﻿using CloudDrive.Infrastructure.DTO;
+﻿using CloudDrive.Core.DTO;
 using Entities = CloudDrive.Core.Domain.Entities;
 
 namespace CloudDrive.Core.Mappers

@@ -1,6 +1,4 @@
-﻿using CloudDrive.Infrastructure.DTO;
-
-namespace CloudDrive.Core.DTO
+﻿namespace CloudDrive.Core.DTO
 {
     public class CreateFileResultDTO
     {

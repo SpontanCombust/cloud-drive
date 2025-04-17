@@ -1,4 +1,4 @@
-﻿using CloudDrive.Infrastructure.DTO;
+﻿using CloudDrive.Core.DTO;
 
 namespace CloudDrive.Core.Services
 {

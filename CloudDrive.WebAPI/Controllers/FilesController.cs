@@ -1,6 +1,4 @@
 ﻿using CloudDrive.Core.Services;
-using CloudDrive.Core.Mappers;
-using CloudDrive.Infrastructure.DTO;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
