@@ -5,19 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CloudDrive.App"
         mc:Ignorable="d"
-        Title="Konfiguracja" Height="300" Width="400">
+        Title="Konfiguracja" Height="350" Width="400">
 	<Grid Background="#FAFAFA">
 		<StackPanel Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center">
-			<Label Content="Adres URL serwera:" />
-			<TextBox x:Name="ServerUrlTextBox" Width="300" Height="30" Margin="0,0,0,10" VerticalContentAlignment="Center"
-             HorizontalContentAlignment="Left"/>
+            <Label Content="Adres URL serwera:" Margin="0,10,0,0"/>
+			<TextBox x:Name="ServerUrlTextBox" Width="300" Height="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Left"/>
+            <TextBlock x:Name="ServerUrlErrorTextBlock" Foreground="Red" TextAlignment="Left" FontWeight="Bold" MinHeight="20"/>
 
-			<Label Content="Ścieżka folderu lokalnego:" />
-			<TextBox x:Name="FolderPathTextBox" Width="300" Height="30" Margin="0,0,0,10" VerticalContentAlignment="Center"
-             HorizontalContentAlignment="Left"/>
+            <Label Content="Ścieżka folderu lokalnego:" Margin="0,10,0,0"/>
+            <TextBox x:Name="FolderPathTextBox" IsReadOnly="True" Width="300" Height="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Left"/>
+            <TextBlock x:Name="FolderPathErrorTextBlock" Foreground="Red" TextAlignment="Left" FontWeight="Bold" Height="Auto"/>
+            <Button Content="Wybierz folder" Click="Folder_Click" Width="300" Height="30" Margin="0,10,0,10"/>
 
-			<Button Content="Wybierz folder" Click="Folder_Click" Width="300" Height="30" Margin="0,0,0,10"/>
-			<Button Content="Zapisz ustawienia" Click="SaveSettingsButton_Click" Width="300" Height="30" Margin="0,0,0,10"/>
+			<Button Content="Zapisz ustawienia" Click="SaveSettingsButton_Click" Width="300" Height="30" Margin="0,20,0,10"/>
 
 			<TextBlock x:Name="SettingsStatusTextBlock" Foreground="Red" TextAlignment="Center" FontWeight="Bold" Height="30"/>
 		</StackPanel>

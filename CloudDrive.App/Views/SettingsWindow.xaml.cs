@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,38 +14,27 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.IO;
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Net.Http.Headers;
+using CloudDrive.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace CloudDrive.App.Views
 {
     public partial class SettingsWindow : Window
     {
-        private string _serverUrl = "";
-        private static string SettingsFilePath
-        {
-            get
-            {
-                var appDataPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CloudDrive");
-                Directory.CreateDirectory(appDataPath);
-                return System.IO.Path.Combine(appDataPath, "settings.json");
-            }
-        }
+        private readonly IUserSettingsService _userSettingsService;
+        private readonly IViewLocator _viewLocator;
 
-        public SettingsWindow()
+        public SettingsWindow(IUserSettingsService userSettingsService, IViewLocator viewLocator)
         {
             InitializeComponent();
+
+            _userSettingsService = userSettingsService;
+            _viewLocator = viewLocator;
+
             LoadSettings();
         }
 
-        public class ClientSettings
-        {
-            public required string ServerUrl { get; set; }
-            public required string FolderPath { get; set; }
-        }
 
         private void Folder_Click(object sender, RoutedEventArgs e)
         {
@@ -51,43 +42,80 @@ namespace CloudDrive.App.Views
             if (folderDialog.ShowDialog() ?? false)
             {
                 FolderPathTextBox.Text = folderDialog.FolderName;
+                FolderPathErrorTextBlock.Text = String.Empty;
             }
         }
 
-        private void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var settings = new ClientSettings
+            if (!ValidateAndSetServerUrl())
             {
-                ServerUrl = ServerUrlTextBox.Text,
-                FolderPath = FolderPathTextBox.Text
-            };
+                return;
+            }
+            if (!ValidateAndSetFolderPath())
+            {
+                return;
+            }
 
-            string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-            File.WriteAllText(SettingsFilePath, json);
-
-            MessageBox.Show("Ustawienia zapisane!");
+            try
+            {
+                await _userSettingsService.SaveSettingsAsync();
+                MessageBox.Show("Ustawienia zapisane!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd podczas zapisu ustawień: " + ex.Message);
+                return;
+            }
 
             // Po zapisaniu ustawień przejdź do logowania
-            new LoginWindow().Show();
+            var loginWindow = _viewLocator.LoginWindow();
+            loginWindow.Show();
             this.Close();
         }
 
-        private void LoadSettings()
+        private async void LoadSettings()
         {
-            if (File.Exists(SettingsFilePath))
+            try
             {
-                string json = File.ReadAllText(SettingsFilePath);
-                var settings = JsonConvert.DeserializeObject<ClientSettings>(json);
+                await _userSettingsService.LoadSettingsAsync();
 
-                if (settings != null)
-                {
-                    ServerUrlTextBox.Text = settings.ServerUrl ?? string.Empty;
-                    FolderPathTextBox.Text = settings.FolderPath ?? string.Empty;
-
-                    // ✅ PRZYPISANIE _serverUrl NA PODSTAWIE ODCZYTANYCH USTAWIEŃ
-                    _serverUrl = settings.ServerUrl ?? string.Empty;
-                }
+                ServerUrlTextBox.Text = _userSettingsService.ServerUrl?.ToString() ?? "";
+                FolderPathTextBox.Text = _userSettingsService.WatchedFolderPath?.ToString() ?? "";
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd podczas ładowania ustawień: " + ex.Message);
+            }
+        }
+
+        private bool ValidateAndSetServerUrl()
+        {
+            try
+            {
+                var url = new Uri(ServerUrlTextBox.Text);
+                _userSettingsService.ServerUrl = url;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ServerUrlErrorTextBlock.Text = ex.Message;
+                return false;
+            }
+        }
+
+        private bool ValidateAndSetFolderPath()
+        {
+            string folderPath = FolderPathTextBox.Text;
+
+            if (!Directory.Exists(folderPath))
+            {
+                FolderPathErrorTextBlock.Text = "Folder nie istnieje";
+                return false;
+            }
+
+            _userSettingsService.WatchedFolderPath = folderPath;
+            return true;
         }
     }
 }

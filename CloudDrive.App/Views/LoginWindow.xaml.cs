@@ -1,36 +1,28 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using System.IO;
-using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using CloudDrive.App.Services;
 
 
 namespace CloudDrive.App.Views
 {
     public partial class LoginWindow : Window
     {
-        private string _serverUrl = "";
+        private readonly IUserSettingsService _userSettingsService;
+        private readonly IViewLocator _viewLocator;
+
         private static string _authToken = "";
         public static string AuthToken => _authToken;
 
-        public LoginWindow()
+        public LoginWindow(IUserSettingsService userSettingsService, IViewLocator viewLocator)
         {
             InitializeComponent();
-            LoadSettings();
+
+            _userSettingsService = userSettingsService;
+            _viewLocator = viewLocator;
         }
 
-        private void LoadSettings()
-        {
-            string settingsFilePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CloudDrive", "settings.json");
-
-            if (File.Exists(settingsFilePath))
-            {
-                string json = File.ReadAllText(settingsFilePath);
-                var settings = JsonConvert.DeserializeObject<SettingsWindow.ClientSettings>(json);
-                _serverUrl = settings?.ServerUrl ?? string.Empty;
-            }
-        }
 
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
@@ -108,13 +100,14 @@ namespace CloudDrive.App.Views
                 {
                     DefaultRequestHeaders = { Authorization = new AuthenticationHeaderValue("Bearer", _authToken) }
                 };
-                return new WebAPIClient(_serverUrl, client);
+                return new WebAPIClient(_userSettingsService.ServerUrl.ToString(), client);
             }
         }
 
         private void BackToSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            new SettingsWindow().Show();
+            var settingsWindow = _viewLocator.SettingsWindow();
+            settingsWindow.Show();
             this.Close();
         }
     }
