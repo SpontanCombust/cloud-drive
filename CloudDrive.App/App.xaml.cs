@@ -5,6 +5,7 @@ using CloudDrive.App.Views;
 using Microsoft.Extensions.DependencyInjection;
 using CloudDrive.App.Services;
 using CloudDrive.App.ServicesImpl;
+using CloudDrive.App.Factories;
 
 namespace CloudDrive.App
 {
@@ -23,8 +24,16 @@ namespace CloudDrive.App
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IUserSettingsService, AppDataUserSettingsService>();
-            services.AddSingleton<IViewLocator, ViewLocator>();
+            services
+                .AddSingleton<IUserSettingsService, AppDataUserSettingsService>()
+                .AddSingleton<IViewLocator, ViewLocator>()
+                .AddSingleton<IAccessTokenHolder, WebAPIAccessTokenHolder>()
+                .AddSingleton<WebAPIClientFactory>()
+                .AddTransient<WebAPIClient>(provider =>
+                {
+                    var factory = provider.GetRequiredService<WebAPIClientFactory>();
+                    return factory.Create();
+                });
         }
 
 
@@ -32,15 +41,24 @@ namespace CloudDrive.App
         {
             base.OnStartup(e);
             
-            var viewLocator = Services.GetRequiredService<IViewLocator>();
-            var settingsService = Services.GetRequiredService<IUserSettingsService>();
-            if (settingsService.SettingsWereSaved())
+            try
             {
-                viewLocator.LoginWindow().Show();
+                var settingsService = Services.GetRequiredService<IUserSettingsService>();
+                settingsService.LoadSettingsAsync();
+
+                var viewLocator = Services.GetRequiredService<IViewLocator>();
+                if (settingsService.SettingsWereSaved())
+                {
+                    viewLocator.LoginWindow().Show();
+                }
+                else
+                {
+                    viewLocator.SettingsWindow().Show();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                viewLocator.SettingsWindow().Show();
+                MessageBox.Show("Nieoczekiwany błąd aplikacji: " + ex.Message);
             }
         }
 

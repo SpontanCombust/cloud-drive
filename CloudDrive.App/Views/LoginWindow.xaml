@@ -23,7 +23,9 @@
 
             <Button Content="Powrót do ustawień" Click="BackToSettingsButton_Click" Width="250" Height="30" Margin="0,0,0,10"/>
 
-            <TextBlock Name="StatusTextBlock" Foreground="Red" TextAlignment="Center" FontWeight="Bold" Height="30"/>
-		</StackPanel>
+            <StackPanel Orientation="Vertical" Width="250">
+                <TextBlock Name="StatusTextBlock" Foreground="Red" TextAlignment="Center" FontWeight="Bold" MinHeight="30" TextWrapping="Wrap"/>
+            </StackPanel>
+        </StackPanel>
 	</Grid>
 </Window>

@@ -1,4 +1,5 @@
-﻿using CloudDrive.App.Services;
+﻿using CloudDrive.App.Factories;
+using CloudDrive.App.Services;
 using CloudDrive.App.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -23,7 +24,9 @@ namespace CloudDrive.App.ServicesImpl
         public LoginWindow LoginWindow()
         {
             var userSettingsService = _serviceProvider.GetRequiredService<IUserSettingsService>();
-            return new LoginWindow(userSettingsService, this);
+            var accessTokenHolder = _serviceProvider.GetRequiredService<IAccessTokenHolder>();
+            var api = _serviceProvider.GetRequiredService<WebAPIClient>();
+            return new LoginWindow(userSettingsService, this, accessTokenHolder, api);
         }
 
         public SettingsWindow SettingsWindow()

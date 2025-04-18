@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using CloudDrive.App.Services;
+using CloudDrive.App.Factories;
 
 
 namespace CloudDrive.App.Views
@@ -11,23 +12,29 @@ namespace CloudDrive.App.Views
     {
         private readonly IUserSettingsService _userSettingsService;
         private readonly IViewLocator _viewLocator;
+        private readonly IAccessTokenHolder _accessTokenHolder;
+        private readonly WebAPIClient _api;
+        
 
-        private static string _authToken = "";
-        public static string AuthToken => _authToken;
-
-        public LoginWindow(IUserSettingsService userSettingsService, IViewLocator viewLocator)
+        public LoginWindow(
+            IUserSettingsService userSettingsService, 
+            IViewLocator viewLocator, 
+            IAccessTokenHolder authTokenHolder, 
+            WebAPIClient api)
         {
             InitializeComponent();
 
             _userSettingsService = userSettingsService;
             _viewLocator = viewLocator;
+            _accessTokenHolder = authTokenHolder;
+            _api = api;
         }
 
 
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            var email = EmailTextBox.Text;
-            var password = PasswordBox.Password;
+            var email = EmailTextBox.Text.Trim();
+            var password = PasswordBox.Password.Trim();
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
                 StatusTextBlock.Text = "Proszę wypełnić wszystkie pola!";
@@ -36,21 +43,21 @@ namespace CloudDrive.App.Views
 
             try
             {
-                var success = await Api.SignUpAsync(email, password);
+                var resp = await _api.SignUpAsync(email, password); // response contains nothing for now
 
                 StatusTextBlock.Text = "Rejestracja zakończona sukcesem!";
             }
-            catch (Exception ex)
+            catch (ApiException ex)
             {
-                StatusTextBlock.Text = "Nieoczekiwany błąd serwer " + ex.Message;
+                StatusTextBlock.Text = "Błąd rejestracji: " + ex.Response;
             }
 
         }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            var email = EmailTextBox.Text;
-            var password = PasswordBox.Password;
+            var email = EmailTextBox.Text.Trim();
+            var password = PasswordBox.Password.Trim();
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
@@ -60,13 +67,14 @@ namespace CloudDrive.App.Views
 
             try
             {
-                var success = await Api.SignInAsync(email, password);
+                var resp = await _api.SignInAsync(email, password);
+                _accessTokenHolder.HoldAccessToken(resp.AccessToken);
 
                 StatusTextBlock.Text = "Logowanie zakończone sukcesem!";
             }
-            catch (Exception ex)
+            catch (ApiException ex)
             {
-                StatusTextBlock.Text = "Nieoczekiwany błąd serwer " + ex.Message;
+                StatusTextBlock.Text = "Błąd logowania: " + ex.Response;
             }
 
         }
@@ -74,33 +82,15 @@ namespace CloudDrive.App.Views
 
         private async Task SyncFiles()
         {
-            if (string.IsNullOrEmpty(_authToken))
-            {
-                StatusTextBlock.Text = "Brak tokena autoryzacyjnego!";
-                return;
-            }
-
             try
             {
-                var metadataList = await Api.SyncAllAsync(); // GET /sync
+                var metadataList = await _api.SyncAllAsync(); // GET /sync
                                                              // Zapisujemy metadataList do lokalnej listy plików
                 MessageBox.Show("Synchronizacja zakończona sukcesem!");
             }
-            catch (Exception ex)
+            catch (ApiException ex)
             {
-                MessageBox.Show("Błąd synchronizacji: " + ex.Message);
-            }
-        }
-
-        private WebAPIClient Api 
-        {
-            get 
-            {
-                HttpClient client = new HttpClient
-                {
-                    DefaultRequestHeaders = { Authorization = new AuthenticationHeaderValue("Bearer", _authToken) }
-                };
-                return new WebAPIClient(_userSettingsService.ServerUrl.ToString(), client);
+                MessageBox.Show("Błąd synchronizacji: " + ex.Response);
             }
         }
 
