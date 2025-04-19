@@ -45,6 +45,9 @@ namespace CloudDrive.App.Model
             IsDirectory = isDirectory;
         }
 
+        /// <summary>
+        /// A relative from <see cref="WatchedFolder"/> to <see cref="Full"/>
+        /// </summary>
         public string Relative
         {
             get
@@ -65,7 +68,15 @@ namespace CloudDrive.App.Model
         {
             get
             {
-                return Path.GetDirectoryName(Full);
+                return Path.GetDirectoryName(Relative);
+            }
+        }
+
+        public string FullParentDir
+        {
+            get
+            {
+                return Path.GetDirectoryName(Full)!;
             }
         }
 

@@ -112,6 +112,8 @@ namespace CloudDrive.App.ServicesImpl
             {
                 var fileResponse = await Api.GetLatestFileVersionAsync(fileId);
 
+                Directory.CreateDirectory(path.FullParentDir);
+
                 using (var fileStream = File.Create(path.Full))
                 {
                     await fileResponse.Stream.CopyToAsync(fileStream);
@@ -143,21 +145,13 @@ namespace CloudDrive.App.ServicesImpl
 
         private HashSet<WatchedFileSystemPath> ScanDirectory(string directoryPath, string watchedFolderPath)
         {
-            var localFiles = Directory.GetFiles(directoryPath)
-                .Select(f => new WatchedFileSystemPath(f, watchedFolderPath, Directory.Exists(f)))
+            var localFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories)
+                .Select(f => new WatchedFileSystemPath(f, watchedFolderPath, false))
                 .ToHashSet();
 
-            var subpaths = new HashSet<WatchedFileSystemPath>();
-
-            foreach (var path in localFiles)
-            {
-                if (path.IsDirectory)
-                {
-                    subpaths.UnionWith(ScanDirectory(path.Full, watchedFolderPath));
-                }
-            }
-
-            localFiles.UnionWith(subpaths);
+            //var localDirs = Directory.GetDirectories(directoryPath, "*", SearchOption.AllDirectories)
+            //    .Select(f => new WatchedFileSystemPath(f, watchedFolderPath, true))
+            //    .ToHashSet();
 
             return localFiles;
         }
