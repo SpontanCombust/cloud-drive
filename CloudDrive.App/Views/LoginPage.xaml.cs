@@ -8,26 +8,23 @@ using CloudDrive.App.Factories;
 
 namespace CloudDrive.App.Views
 {
-    public partial class LoginWindow : Window
+    public partial class LoginPage : Page
     {
-        private readonly IUserSettingsService _userSettingsService;
         private readonly IViewLocator _viewLocator;
         private readonly IAccessTokenHolder _accessTokenHolder;
-        private readonly WebAPIClient _api;
+        private readonly WebAPIClientFactory _apiFactory;
         
 
-        public LoginWindow(
-            IUserSettingsService userSettingsService, 
+        public LoginPage(
             IViewLocator viewLocator, 
             IAccessTokenHolder authTokenHolder, 
-            WebAPIClient api)
+            WebAPIClientFactory apiFactory)
         {
             InitializeComponent();
 
-            _userSettingsService = userSettingsService;
             _viewLocator = viewLocator;
             _accessTokenHolder = authTokenHolder;
-            _api = api;
+            _apiFactory = apiFactory;
         }
 
 
@@ -43,7 +40,7 @@ namespace CloudDrive.App.Views
 
             try
             {
-                var resp = await _api.SignUpAsync(email, password); // response contains nothing for now
+                var resp = await Api.SignUpAsync(email, password); // response contains nothing for now
 
                 StatusTextBlock.Text = "Rejestracja zakończona sukcesem!";
             }
@@ -51,7 +48,10 @@ namespace CloudDrive.App.Views
             {
                 StatusTextBlock.Text = "Błąd rejestracji: " + ex.Response;
             }
-
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = "Błąd logowania: " + ex.Message;
+            }
         }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -67,7 +67,7 @@ namespace CloudDrive.App.Views
 
             try
             {
-                var resp = await _api.SignInAsync(email, password);
+                var resp = await Api.SignInAsync(email, password);
                 _accessTokenHolder.HoldAccessToken(resp.AccessToken);
 
                 StatusTextBlock.Text = "Logowanie zakończone sukcesem!";
@@ -76,29 +76,27 @@ namespace CloudDrive.App.Views
             {
                 StatusTextBlock.Text = "Błąd logowania: " + ex.Response;
             }
-
-        }
-
-
-        private async Task SyncFiles()
-        {
-            try
+            catch (Exception ex)
             {
-                var metadataList = await _api.SyncAllAsync(); // GET /sync
-                                                             // Zapisujemy metadataList do lokalnej listy plików
-                MessageBox.Show("Synchronizacja zakończona sukcesem!");
+                StatusTextBlock.Text = "Błąd logowania: " + ex.Message;
             }
-            catch (ApiException ex)
-            {
-                MessageBox.Show("Błąd synchronizacji: " + ex.Response);
-            }
+
         }
 
         private void BackToSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = _viewLocator.SettingsWindow();
-            settingsWindow.Show();
-            this.Close();
+            var settingsPage = _viewLocator.SettingsPage();
+            this.NavigationService.Navigate(settingsPage);
+        }
+
+
+
+        private WebAPIClient Api
+        {
+            get
+            {
+                return _apiFactory.Create();
+            }
         }
     }
 }

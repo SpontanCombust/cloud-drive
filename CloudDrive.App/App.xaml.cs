@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using CloudDrive.App.Services;
 using CloudDrive.App.ServicesImpl;
 using CloudDrive.App.Factories;
+using System.Windows.Threading;
 
 namespace CloudDrive.App
 {
@@ -25,6 +26,7 @@ namespace CloudDrive.App
         private static void ConfigureServices(IServiceCollection services)
         {
             services
+                .AddSingleton<MainWindow>()
                 .AddSingleton<IUserSettingsService, AppDataUserSettingsService>()
                 .AddSingleton<IViewLocator, ViewLocator>()
                 .AddSingleton<IAccessTokenHolder, WebAPIAccessTokenHolder>()
@@ -38,29 +40,17 @@ namespace CloudDrive.App
         }
 
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            
-            try
-            {
-                var settingsService = Services.GetRequiredService<IUserSettingsService>();
-                settingsService.LoadSettingsAsync();
 
-                var viewLocator = Services.GetRequiredService<IViewLocator>();
-                if (settingsService.SettingsWereSaved())
-                {
-                    viewLocator.LoginWindow().Show();
-                }
-                else
-                {
-                    viewLocator.SettingsWindow().Show();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Nieoczekiwany błąd aplikacji: " + ex.Message);
-            }
+            DispatcherUnhandledException += App_DispatcherUnhandledException;
+
+            var settingsService = Services.GetRequiredService<IUserSettingsService>();
+            await settingsService.LoadSettingsAsync();
+
+            var mainWindow = Services.GetRequiredService<MainWindow>();
+            mainWindow.Show();
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -70,6 +60,12 @@ namespace CloudDrive.App
             {
                 disposable.Dispose();
             }
+        }
+
+        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show("Nieoczekiwany błąd aplikacji: " + e.Exception.Message);
+            e.Handled = true; // prevents app crash
         }
     }
 }

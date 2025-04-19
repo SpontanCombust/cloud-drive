@@ -100,6 +100,10 @@ namespace CloudDrive.App.ServicesImpl
             {
                 throw new Exception(ex.Response);
             }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         private async Task DownloadLatestFileAsync(Guid fileId, WatchedFileSystemPath path)
@@ -118,6 +122,10 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 throw new Exception(ex.Response);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
             }
         }
 

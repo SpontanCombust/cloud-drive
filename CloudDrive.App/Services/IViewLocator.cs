@@ -4,7 +4,7 @@ namespace CloudDrive.App.Services
 {
     public interface IViewLocator
     {
-        LoginWindow LoginWindow();
-        SettingsWindow SettingsWindow();
+        LoginPage LoginPage();
+        SettingsPage SettingsPage();
     }
 }

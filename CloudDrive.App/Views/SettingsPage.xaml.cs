@@ -20,12 +20,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CloudDrive.App.Views
 {
-    public partial class SettingsWindow : Window
+    public partial class SettingsPage : Page
     {
         private readonly IUserSettingsService _userSettingsService;
         private readonly IViewLocator _viewLocator;
 
-        public SettingsWindow(IUserSettingsService userSettingsService, IViewLocator viewLocator)
+        public SettingsPage(IUserSettingsService userSettingsService, IViewLocator viewLocator)
         {
             InitializeComponent();
 
@@ -69,9 +69,8 @@ namespace CloudDrive.App.Views
             }
 
             // Po zapisaniu ustawień przejdź do logowania
-            var loginWindow = _viewLocator.LoginWindow();
-            loginWindow.Show();
-            this.Close();
+            var loginPage = _viewLocator.LoginPage();
+            this.NavigationService.Navigate(loginPage);
         }
 
         private async void LoadSettings()
