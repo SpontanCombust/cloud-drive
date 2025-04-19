@@ -33,7 +33,8 @@ namespace CloudDrive.App
                 {
                     var factory = provider.GetRequiredService<WebAPIClientFactory>();
                     return factory.Create();
-                });
+                })
+                .AddSingleton<ISyncService, SyncService>();
         }
 
 

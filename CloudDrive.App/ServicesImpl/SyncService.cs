@@ -1,176 +1,165 @@
-﻿using CloudDrive.App.Services;
+﻿using CloudDrive.App.Factories;
+using CloudDrive.App.Model;
+using CloudDrive.App.Services;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Windows;
 
 
 namespace CloudDrive.App.ServicesImpl
 {
     public class SyncService : ISyncService
     {
+        private readonly WebAPIClientFactory _apiFactory;
+        private readonly IUserSettingsService _userSettingsService;
 
-        private readonly WebAPIClient Api;
-        private readonly string _folderPath;
-        private readonly string authToken = "";
+        /// <summary>
+        /// Maps path information of files on client's computer to their current version state received from the server 
+        /// </summary>
+        private Dictionary<WatchedFileSystemPath, FileVersionDTO> _fileVersionState;
 
-        public SyncService(string serverUrl, string authToken, string folderPath)
+        public SyncService(WebAPIClientFactory apiFactory, IUserSettingsService userSettingsService)
         {
-            _folderPath = folderPath;
-            this.authToken = authToken;
+            _apiFactory = apiFactory;
+            _userSettingsService = userSettingsService;
 
-            HttpClient client = new HttpClient
-            {
-                DefaultRequestHeaders = { Authorization = new AuthenticationHeaderValue("Bearer", authToken) }
-            };
-
-            Api = new WebAPIClient(serverUrl, client);
+            _fileVersionState = new Dictionary<WatchedFileSystemPath, FileVersionDTO>();
         }
-        public async Task SynchronizeAllAsync()
-        {
-            if (string.IsNullOrEmpty(_folderPath) || !Directory.Exists(_folderPath))
-                throw new Exception("Ścieżka do folderu nie została ustawiona lub nie istnieje.");
 
-            // Pobieranie metadanych z serwera (pliki)
+
+        
+
+        public async Task SynchronizeAllFilesAsync()
+        {
+            await FetchStateFromRemoteAsync();
+
+            var localFsPaths = ScanWatchedFolder();
+            var syncedFsPaths = _fileVersionState.Keys.ToHashSet();
+            var syncTasks = new List<Task>();
+
+
+            var filesToDownload = syncedFsPaths.Except(localFsPaths);
+
+            foreach (var fsPath in filesToDownload)
+            {
+                Guid fileId = _fileVersionState[fsPath].FileId;
+                syncTasks.Add(DownloadLatestFileAsync(fileId, fsPath));
+            }
+
+
+            var filesToUpload = localFsPaths.Except(syncedFsPaths);
+
+            foreach (var fsPath in filesToUpload)
+            {
+                syncTasks.Add(UploadFileAsync(fsPath));
+            }
+
+
+            await Task.WhenAll(syncTasks);
+        }
+
+
+        // Pobieranie metadanych z serwera (pliki)
+        private async Task FetchStateFromRemoteAsync()
+        {
+            string? watched = _userSettingsService.WatchedFolderPath;
+
+            if (string.IsNullOrEmpty(watched) || !Directory.Exists(watched))
+                throw new Exception("Ścieżka do obserwowanego folderu nie została ustawiona lub nie istnieje.");
+
             var response = await Api.SyncAllAsync();
-            var serverFiles = response.CurrentFileVersionsInfos;
-            var serverFileMap = serverFiles.ToDictionary(f => f.FileId, f => f.ClientDirPath);
-
-            // Lista naszych plików lokalnych
-            var localFiles = Directory.GetFiles(_folderPath);
-            var localFileMap = new Dictionary<Guid, string>();
-
-            // Iteracja aby zbudować mapę lokalnych plików
-            foreach (var path in localFiles)
-            {
-                var name = Path.GetFileNameWithoutExtension(path);
-                var parts = name.Split('_');
-                if (parts.Length > 1 && Guid.TryParse(parts[^1], out var id))
-                {
-                    localFileMap[id] = path;
-                }
-            }
-
-            foreach (var serverFile in serverFileMap)
-            {
-                var fileId = serverFile.Key;
-                var serverFilePath = serverFile.Value;
-
-                // Jeśli plik z serwera istnieje lokalnie
-                if (localFileMap.ContainsKey(fileId))
-                {
-                    var localFilePath = localFileMap[fileId];
-
-                    if (localFilePath != serverFilePath)
-                    {
-                        Console.WriteLine($"Plik z serwera znajduje się w innej ścieżce: {serverFilePath}. Pobieram go...");
-                        await DownloadFileAsync(fileId.ToString(), localFilePath); // sprawdzić ścieżki
-                    }
-                }
-                else // Jeśli plik z serwera nie istnieje lokalnie
-                {
-                    Console.WriteLine($"Plik {fileId} nie istnieje lokalnie, należy go pobrać.");
-                    await DownloadFileAsync(fileId.ToString(), _folderPath); // sprawdzić ścieżke do pliku
-                }
-            }
-
-            // Sprawdzamy, czy jakieś pliki lokalne nie istnieją na serwerze (potrzebują wysłania)
-            foreach (var localFile in localFileMap)
-            {
-                var fileId = localFile.Key;
-
-                // Jeśli plik lokalny nie istnieje na serwerze, wysyłamy go
-
-                if (!serverFileMap.ContainsKey(fileId))
-                {
-                    Console.WriteLine($"Plik lokalny {fileId} nie istnieje na serwerze, wysyłam go.");
-
-                    await UploadFileAsync(localFile.Value);
-
-                    var result = await UploadFileAsync(localFile.Value);
-
-                    if (result != null)
-                    {
-                        // Zakładam, że result zawiera ClientDirPath i ClientFileName
-                        var newServerFilePath = Path.Combine(_folderPath, result.ClientDirPath, $"{result.ClientFileName}_{result.FileId}");
-
-                        // Dodajemy do mapy serwera, żeby uniknąć ponownego przesyłania w tej samej sesji
-                        serverFileMap[result.FileId] = newServerFilePath;
-                    }
-
-                }
-            }
+            _fileVersionState = response.CurrentFileVersionsInfos.ToDictionary(
+                fv => new WatchedFileSystemPath(
+                        Path.Combine(watched, fv.ClientDirPath, fv.ClientFileName),
+                        watched,
+                        false //TODO zmienić gdy serwer będzie wspierać synchronizację folderów
+                    ),
+                fv => fv
+            );
         }
 
-
-        public async Task<FileVersionDTO> UploadFileAsync(string filePath)
+        private async Task UploadFileAsync(WatchedFileSystemPath path)
         {
-            if (string.IsNullOrEmpty(filePath)) return null;
+            if (!path.Exists)
+                throw new Exception("Plik nie istnieje");
 
             try
             {
-                using var fileStream = File.OpenRead(filePath);
-                var fileName = Path.GetFileName(filePath);
-
-                // Wyciągamy ścieżkę katalogu
-                var clientDirPath = Path.GetDirectoryName(filePath)?.Replace(_folderPath, "")?.Trim(Path.DirectorySeparatorChar) ?? "";
-
-                if (string.IsNullOrEmpty(clientDirPath))
-                {
-                    MessageBox.Show("Nie można znaleźć katalogu docelowego dla pliku.");
-                    return null;
-                }
+                using var fileStream = File.OpenRead(path.Full);
 
                 // Tworzymy obiekt FileParameter, który zawiera plik do przesłania
-                var fileParam = new FileParameter(fileStream, fileName, "application/octet-stream");
+                var fileParam = new FileParameter(fileStream, path.FileName, "application/octet-stream");
+                var resp = await Api.CreateFileAsync(fileParam, path.RelativeParentDir);
 
-                var result = await Api.CreateFileAsync(fileParam, clientDirPath);
+                _fileVersionState.Add(path, resp.FirstFileVersionInfo);
 
-                if (result != null)
+                //TODO use a logger
+                Console.WriteLine($"Wysłano plik z: {path.Full}");
+            }
+            catch (ApiException ex)
+            {
+                throw new Exception(ex.Response);
+            }
+        }
+
+        private async Task DownloadLatestFileAsync(Guid fileId, WatchedFileSystemPath path)
+        {
+            try
+            {
+                var fileResponse = await Api.GetLatestFileVersionAsync(fileId);
+
+                using (var fileStream = File.Create(path.Full))
                 {
-                    return result.FirstFileVersionInfo;
-                }
-                else
-                {
-                    MessageBox.Show("Wystąpił problem podczas wysyłania pliku.");
-                    return null;
+                    await fileResponse.Stream.CopyToAsync(fileStream);
+                    //TODO use a logger
+                    Console.WriteLine($"Pobrano plik do: {path.Full}");
                 }
             }
-            catch (Exception ex)
+            catch (ApiException ex)
             {
-                MessageBox.Show("Błąd wysyłania pliku: " + ex.Message);
-                return null;
+                throw new Exception(ex.Response);
             }
         }
 
 
-        public async Task DownloadFileAsync(string fileId, string destinationPath)
+
+        private HashSet<WatchedFileSystemPath> ScanWatchedFolder()
         {
-            if (string.IsNullOrEmpty(fileId))
-            {
-                MessageBox.Show("Brak identyfikatora pliku.");
-                return;
-            }
+            string? watched = _userSettingsService.WatchedFolderPath;
 
-            if (!Guid.TryParse(fileId, out var fileGuid))
-            {
-                MessageBox.Show("Nieprawidłowy identyfikator pliku (musi być GUID).");
-                return;
-            }
+            if (string.IsNullOrEmpty(watched) || !Directory.Exists(watched))
+                throw new Exception("Ścieżka do obserwowanego folderu nie została ustawiona lub nie istnieje.");
 
-            try
-            {
-                var fileResponse = await Api.GetLatestFileVersionAsync(fileGuid);
+            return ScanDirectory(watched, watched);
+        }
 
-                using (var fileStream = File.Create(destinationPath))
+        private HashSet<WatchedFileSystemPath> ScanDirectory(string directoryPath, string watchedFolderPath)
+        {
+            var localFiles = Directory.GetFiles(directoryPath)
+                .Select(f => new WatchedFileSystemPath(f, watchedFolderPath, Directory.Exists(f)))
+                .ToHashSet();
+
+            var subpaths = new HashSet<WatchedFileSystemPath>();
+
+            foreach (var path in localFiles)
+            {
+                if (path.IsDirectory)
                 {
-                    await fileResponse.Stream.CopyToAsync(fileStream);
-                    MessageBox.Show($"Pobrano plik do: {destinationPath}");
+                    subpaths.UnionWith(ScanDirectory(path.Full, watchedFolderPath));
                 }
             }
-            catch (Exception ex)
+
+            localFiles.UnionWith(subpaths);
+
+            return localFiles;
+        }
+
+
+        private WebAPIClient Api
+        {
+            get
             {
-                MessageBox.Show("Błąd pobierania pliku: " + ex.Message);
+                return _apiFactory.Create();
             }
         }
     }
