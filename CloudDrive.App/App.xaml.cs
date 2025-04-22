@@ -7,6 +7,7 @@ using CloudDrive.App.Services;
 using CloudDrive.App.ServicesImpl;
 using CloudDrive.App.Factories;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace CloudDrive.App
 {
@@ -25,6 +26,8 @@ namespace CloudDrive.App
 
         private static void ConfigureServices(IServiceCollection services)
         {
+            var logRelay = new LogRelayService();
+
             services
                 .AddSingleton<MainWindow>()
                 .AddSingleton<IUserSettingsService, AppDataUserSettingsService>()
@@ -36,7 +39,14 @@ namespace CloudDrive.App
                     var factory = provider.GetRequiredService<WebAPIClientFactory>();
                     return factory.Create();
                 })
-                .AddSingleton<ISyncService, SyncService>();
+                .AddSingleton<ISyncService, SyncService>()
+                .AddSingleton<ILogRelayService>(logRelay)
+                .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
+                .AddLogging(builder =>
+                {
+                    //builder.ClearProviders();
+                    builder.AddProvider(new SimpleRelayLoggerProvider(logRelay));
+                });
         }
 
 
