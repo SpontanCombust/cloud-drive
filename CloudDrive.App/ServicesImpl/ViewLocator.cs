@@ -27,5 +27,13 @@ namespace CloudDrive.App.ServicesImpl
             var userSettingsService = _serviceProvider.GetRequiredService<IUserSettingsService>();
             return new SettingsPage(userSettingsService, this);
         }
+
+        public StatusPage StatusPage()
+        {
+            var logRelayService = _serviceProvider.GetRequiredService<ILogRelayService>();
+            var logHistoryService = _serviceProvider.GetRequiredService<ILogHistoryService>();
+            var syncService = _serviceProvider.GetRequiredService<ISyncService>();
+            return new StatusPage(logRelayService, logHistoryService, syncService);
+        }
     }
 }

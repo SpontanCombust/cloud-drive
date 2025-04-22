@@ -70,7 +70,10 @@ namespace CloudDrive.App.Views
                 var resp = await Api.SignInAsync(email, password);
                 _accessTokenHolder.HoldAccessToken(resp.AccessToken);
 
-                StatusTextBlock.Text = "Logowanie zakończone sukcesem!";
+                MessageBox.Show("Logowanie zakończone sukcesem!");
+                var statusPage = _viewLocator.StatusPage();
+                this.NavigationService.Navigate(statusPage);
+
             }
             catch (ApiException ex)
             {

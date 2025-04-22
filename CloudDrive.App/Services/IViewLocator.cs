@@ -6,5 +6,6 @@ namespace CloudDrive.App.Services
     {
         LoginPage LoginPage();
         SettingsPage SettingsPage();
+        StatusPage StatusPage();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CloudDrive.App.Services;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,9 +16,6 @@ using System.Windows.Shapes;
 
 namespace CloudDrive.App.Views
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly IUserSettingsService _userSettingsService;
@@ -30,15 +28,22 @@ namespace CloudDrive.App.Views
             _userSettingsService = userSettingsService;
             _viewLocator = viewLocator;
 
-            if (userSettingsService.SettingsWereSaved())
+            try
             {
-                var loginPage = _viewLocator.LoginPage();
-                MainFrame.Content = loginPage;
+                if (userSettingsService.SettingsWereSaved())
+                {
+                    var loginPage = _viewLocator.LoginPage();
+                    MainFrame.Content = loginPage;
+                }
+                else
+                {
+                    var settingsPage = _viewLocator.SettingsPage();
+                    MainFrame.Content = settingsPage;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var settingsPage = _viewLocator.SettingsPage();
-                MainFrame.Content = settingsPage;
+                MessageBox.Show("Wystąpił błąd podczas ładowania aplikacji: " + ex.Message);
             }
         }
     }

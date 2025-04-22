@@ -1,7 +1,9 @@
 ﻿using CloudDrive.App.Factories;
 using CloudDrive.App.Model;
 using CloudDrive.App.Services;
+using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -12,52 +14,80 @@ namespace CloudDrive.App.ServicesImpl
     {
         private readonly WebAPIClientFactory _apiFactory;
         private readonly IUserSettingsService _userSettingsService;
+        private readonly ILogger<SyncService> _logger;
 
-        /// <summary>
-        /// Maps path information of files on client's computer to their current version state received from the server 
-        /// </summary>
         private Dictionary<WatchedFileSystemPath, FileVersionDTO> _fileVersionState;
 
-        public SyncService(WebAPIClientFactory apiFactory, IUserSettingsService userSettingsService)
+        public SyncService(WebAPIClientFactory apiFactory, IUserSettingsService userSettingsService, ILogger<SyncService> logger)
         {
             _apiFactory = apiFactory;
             _userSettingsService = userSettingsService;
+            _logger = logger;
 
             _fileVersionState = new Dictionary<WatchedFileSystemPath, FileVersionDTO>();
         }
 
 
-        
+      
 
         public async Task SynchronizeAllFilesAsync()
         {
-            await FetchStateFromRemoteAsync();
-
-            var localFsPaths = ScanWatchedFolder();
-            var syncedFsPaths = _fileVersionState.Keys.ToHashSet();
-            var syncTasks = new List<Task>();
-
-
-            var filesToDownload = syncedFsPaths.Except(localFsPaths);
-
-            foreach (var fsPath in filesToDownload)
+            try
             {
-                Guid fileId = _fileVersionState[fsPath].FileId;
-                syncTasks.Add(DownloadLatestFileAsync(fileId, fsPath));
+                await FetchStateFromRemoteAsync();
+
+                var localFsPaths = ScanWatchedFolder();
+                var syncedFsPaths = _fileVersionState.Keys.ToHashSet();
+                var syncTasks = new List<Task>();
+
+
+                var filesToDownload = syncedFsPaths.Except(localFsPaths);
+
+                foreach (var fsPath in filesToDownload)
+                {
+                    Guid fileId = _fileVersionState[fsPath].FileId;
+                    syncTasks.Add(DownloadLatestFileAsync(fileId, fsPath));
+                }
+
+
+                var filesToUpload = localFsPaths.Except(syncedFsPaths);
+
+                foreach (var fsPath in filesToUpload)
+                {
+                    syncTasks.Add(UploadFileAsync(fsPath));
+                }
+
+                await Task.WhenAll(syncTasks);
+
+                _logger.LogInformation("Zakończono pełną synchronizację!");
             }
-
-
-            var filesToUpload = localFsPaths.Except(syncedFsPaths);
-
-            foreach (var fsPath in filesToUpload)
+            catch (ApiException ex)
             {
-                syncTasks.Add(UploadFileAsync(fsPath));
+                _logger.LogError(ex, "Błąd komunikacji z serwerem.");
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogError(ex, "Brak dostępu do pliku lub folderu.");
+            }
+            catch (IOException ex)
+            {
+                _logger.LogError(ex, "Błą wejścia/wyjścia");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Pojawił się błąd podczas synchronizacji plików.");
 
+                _logger.LogError("Źródło błędu: {Source}", ex.Source);
+                _logger.LogError("Ślad stosu: {StackTrace}", ex.StackTrace);
+                _logger.LogError("Opis błędu: {Message}", ex.Message);
 
-            await Task.WhenAll(syncTasks);
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError("Wewnętrzny wyjątek: {Message}", ex.InnerException.Message);
+                    _logger.LogError("Ślad stosu wewnętrznego wyjątku: {StackTrace}", ex.InnerException.StackTrace);
+                }
+            }
         }
-
 
         // Pobieranie metadanych z serwera (pliki)
         private async Task FetchStateFromRemoteAsync()
@@ -93,8 +123,7 @@ namespace CloudDrive.App.ServicesImpl
 
                 _fileVersionState.Add(path, resp.FirstFileVersionInfo);
 
-                //TODO use a logger
-                Console.WriteLine($"Wysłano plik z: {path.Full}");
+                _logger.LogInformation($"Wysłano plik z: {path.Full}");
             }
             catch (ApiException ex)
             {
@@ -117,8 +146,8 @@ namespace CloudDrive.App.ServicesImpl
                 using (var fileStream = File.Create(path.Full))
                 {
                     await fileResponse.Stream.CopyToAsync(fileStream);
-                    //TODO use a logger
-                    Console.WriteLine($"Pobrano plik do: {path.Full}");
+
+                    _logger.LogInformation($"Pobrano plik do: {path.Full}");
                 }
             }
             catch (ApiException ex)
