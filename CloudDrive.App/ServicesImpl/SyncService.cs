@@ -100,7 +100,7 @@ namespace CloudDrive.App.ServicesImpl
             var response = await Api.SyncAllAsync();
             _fileVersionState = response.CurrentFileVersionsInfos.ToDictionary(
                 fv => new WatchedFileSystemPath(
-                        Path.Combine(watched, fv.ClientDirPath, fv.ClientFileName),
+                        Path.Combine(watched, fv.ClientDirPath ?? "", fv.ClientFileName),
                         watched,
                         false //TODO zmienić gdy serwer będzie wspierać synchronizację folderów
                     ),
