@@ -6,7 +6,7 @@ namespace CloudDrive.Core.DTO
     {
         public Guid FileVersionId { get; set; }
         public Guid FileId { get; set; }
-        public string ClientDirPath { get; set; }
+        public string? ClientDirPath { get; set; }
         public string ClientFileName { get; set; }
         [JsonIgnore] public string ServerDirPath { get; set; }
         [JsonIgnore] public string ServerFileName { get; set; }
