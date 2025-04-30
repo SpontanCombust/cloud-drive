@@ -1,0 +1,68 @@
+@startuml
+
+skinparam sequenceMessageAlign center
+
+
+note over Klient1
+Włączenie urządzenia
+end note
+
+
+Klient1 -> Serwer : Pobranie obecnego stanu - GET /sync
+return FileVersion[]
+
+note over Klient1
+Skan plików - wykryto lokalny plik niebędący na serwerze
+end note
+
+Klient1 -> Serwer : Wysłanie nowego pliku - POST /file
+return FileVersion
+
+note over Klient1
+Wyłączenie urządzenia
+end note
+
+
+
+note over Klient2
+Włączenie urządzenia
+end note
+
+Serwer <- Klient2 : Pobranie obecnego stanu - GET /sync
+return FileVersion[]
+
+note over Klient2
+Skan plików - nie wykryto lokalnych zmian
+end note
+
+Serwer <- Klient2 : Pobranie nowego pliku - GET /file/{fileId}
+return FileResponse
+
+note over Klient2
+Skan plików - wykryto usunięcie pliku
+end note
+
+Serwer <- Klient2 : Usunięcie pliku - DELETE /file/{fileId}
+
+
+
+note over Klient1
+Włączenie urządzenia
+end note
+
+Klient1 -> Serwer : Pobranie stanu - GET /sync
+return FileVersion[]
+
+note over Klient1
+Skan plików - plik nadal znajduje się na komputerze,
+ale nie ma go na serwerze
+end note
+
+Klient1 -> Serwer : ?
+
+note left
+Czy mam nowy plik czy plik do usunięcia z komputera?
+end note
+
+
+@enduml
