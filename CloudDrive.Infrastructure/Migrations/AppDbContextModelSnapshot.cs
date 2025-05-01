@@ -72,7 +72,7 @@ namespace CloudDrive.Infrastructure.Migrations
                     b.Property<string>("ServerFileName")
                         .HasColumnType("text");
 
-                    b.Property<long?>("SizeByes")
+                    b.Property<long?>("SizeBytes")
                         .HasColumnType("bigint");
 
                     b.Property<int>("VersionNr")
@@ -113,7 +113,7 @@ namespace CloudDrive.Infrastructure.Migrations
             modelBuilder.Entity("CloudDrive.Core.Domain.Entities.File", b =>
                 {
                     b.HasOne("CloudDrive.Core.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Files")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -124,12 +124,22 @@ namespace CloudDrive.Infrastructure.Migrations
             modelBuilder.Entity("CloudDrive.Core.Domain.Entities.FileVersion", b =>
                 {
                     b.HasOne("CloudDrive.Core.Domain.Entities.File", "File")
-                        .WithMany()
+                        .WithMany("FileVersions")
                         .HasForeignKey("FileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("File");
+                });
+
+            modelBuilder.Entity("CloudDrive.Core.Domain.Entities.File", b =>
+                {
+                    b.Navigation("FileVersions");
+                });
+
+            modelBuilder.Entity("CloudDrive.Core.Domain.Entities.User", b =>
+                {
+                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }

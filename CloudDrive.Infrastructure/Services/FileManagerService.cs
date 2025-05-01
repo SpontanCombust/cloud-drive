@@ -34,6 +34,8 @@ namespace CloudDrive.Infrastructure.Services
                 throw new InvalidOperationException("User could not be found");
             }
 
+            //FIXME make sure there are no local path conflicts between different active files
+
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
             string? newFileVersionServerDirPath = null;
@@ -161,6 +163,75 @@ namespace CloudDrive.Infrastructure.Services
             var hashBytes = await MD5.HashDataAsync(fileStream);
             var hashStr = Convert.ToHexString(hashBytes);
             return hashStr;
+        }
+
+        public async Task<FileVersionDTO> UpdateFile(Guid fileId, Stream? fileStream, string clientFileName, string? clientDirPath)
+        {
+            //TODO create dedicated exception type
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File does not exist");
+
+            if (fileInfo.Deleted)
+            {
+                throw new Exception("File is marked as deleted and cannot be updated");
+            }
+            
+            Guid newFileVersionId = Guid.NewGuid();
+            string newFileVersionServerPath = await fileSystemService.AllocatePathForFile(fileInfo.UserId, newFileVersionId);
+            string? newFileVersionServerDirPath = null;
+            string? newFileVersionServerFileName = null;
+            string? hash = null;
+            long? fileSize = null;
+
+            if (fileInfo.IsDir)
+            {
+                if (fileStream != null)
+                {
+                    throw new InvalidOperationException("No data should be sent when the subject is a directory");
+                }
+            }
+            else
+            {
+                if (fileStream == null)
+                {
+                    throw new InvalidOperationException("File is required for a non-directory file");
+                }
+
+                newFileVersionServerDirPath = Path.GetDirectoryName(newFileVersionServerPath)!;
+                newFileVersionServerFileName = Path.GetFileName(newFileVersionServerPath);
+
+                await fileSystemService.CreateFile(newFileVersionServerPath, fileStream);
+
+                fileStream.Seek(0, SeekOrigin.Begin);
+                hash = await CalculateFileHash(fileStream);
+
+                fileStream.Seek(0, SeekOrigin.Begin);
+                fileSize = fileStream.Length;
+            }
+
+            //FIXME make sure there are no local path conflicts between different active files
+
+            var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
+                newFileVersionId,
+                fileId,
+                clientDirPath,
+                clientFileName,
+                newFileVersionServerDirPath,
+                newFileVersionServerFileName,
+                hash,
+                fileSize
+            );
+
+            return fileVersionInfo;
+        }
+
+        public async Task DeleteFile(Guid fileId)
+        {
+            await fileInfoService.UpdateInfoForFile(fileId, true);
+        }
+
+        public async Task RestoreFile(Guid fileId)
+        {
+            await fileInfoService.UpdateInfoForFile(fileId, false);
         }
     }
 }

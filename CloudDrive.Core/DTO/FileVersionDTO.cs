@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace CloudDrive.Infrastructure.DTO
+namespace CloudDrive.Core.DTO
 {
     public class FileVersionDTO
     {
@@ -33,7 +33,7 @@ namespace CloudDrive.Infrastructure.DTO
         /// <summary>
         /// Size of the file in bytes or null for directories
         /// </summary>
-        public long? SizeByes { get; set; }
+        public long? SizeBytes { get; set; }
         /// <summary>
         /// UTC creation date of the record on the server
         /// </summary>

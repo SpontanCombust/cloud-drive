@@ -31,7 +31,7 @@
         /// <summary>
         /// Size of the file in bytes or null for directories
         /// </summary>
-        public long? SizeByes { get; set; }
+        public long? SizeBytes { get; set; }
         /// <summary>
         /// UTC creation date of the record on the server
         /// </summary>
