@@ -140,8 +140,8 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                Stream fileStream = req.File.OpenReadStream();
-                string fileName = req.File.FileName;
+                Stream? fileStream = req.File?.OpenReadStream();
+                string fileName = req.ClientFileName;
                 var result = await fileManagerService.UpdateFile(fileId, fileStream, fileName, req.ClientDirPath);
 
                 var resp = new UpdateFileResponse

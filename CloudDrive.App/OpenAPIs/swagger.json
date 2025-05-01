@@ -354,6 +354,9 @@
                   },
                   "ClientDirPath": {
                     "type": "string"
+                  },
+                  "ClientFileName": {
+                    "type": "string"
                   }
                 }
               },
@@ -362,6 +365,9 @@
                   "style": "form"
                 },
                 "ClientDirPath": {
+                  "style": "form"
+                },
+                "ClientFileName": {
                   "style": "form"
                 }
               }
