@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace CloudDrive.WebAPI.Controllers
 {
     [ApiController]
-    [Route("files")]
+    [Route("files/regular")]
     [Authorize]
-    public class FilesController : ControllerBase
+    public class RegularFilesController : ControllerBase
     {
         private readonly IFileManagerService fileManagerService;
         private readonly IFileInfoService fileInfoService;
 
-        public FilesController(
+        public RegularFilesController(
             IFileManagerService fileManagerService,
             IFileInfoService fileInfoService)
         {
@@ -30,12 +30,12 @@ namespace CloudDrive.WebAPI.Controllers
         public async Task<ActionResult<CreateFileResponse>> Create([FromForm] CreateFileRequest req)
         {
             Guid userId = User.GetId();
-            Stream? fileStream = req.File?.OpenReadStream();
-            string fileName = req.ClientFileName;
+            Stream fileStream = req.File.OpenReadStream();
+            string fileName = req.File.FileName;
 
             try
             {
-                var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath, req.IsDirectory);
+                var result = await fileManagerService.CreateFile(userId, fileStream, fileName, req.ClientDirPath);
 
                 var response = new CreateFileResponse
                 {
@@ -72,10 +72,6 @@ namespace CloudDrive.WebAPI.Controllers
                 {
                     return NotFound();
                 }
-                else if (result.IsDir)
-                {
-                    return BadRequest("Downloading directories is not supported");
-                }
                 else if (result.FileContent == null)
                 {
                     return NotFound();
@@ -109,10 +105,6 @@ namespace CloudDrive.WebAPI.Controllers
                 {
                     return NotFound();
                 }
-                else if (result.IsDir)
-                {
-                    return BadRequest("Downloading directories is not supported");
-                }
                 else if (result.FileContent == null)
                 {
                     return NotFound();
@@ -140,8 +132,8 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                Stream? fileStream = req.File?.OpenReadStream();
-                string fileName = req.ClientFileName;
+                Stream fileStream = req.File.OpenReadStream();
+                string fileName = req.File.FileName;
                 var result = await fileManagerService.UpdateFile(fileId, fileStream, fileName, req.ClientDirPath);
 
                 var resp = new UpdateFileResponse

@@ -155,25 +155,18 @@
         }
       }
     },
-    "/files": {
+    "/files/dirs": {
       "post": {
         "tags": [
-          "Files"
+          "Directories"
         ],
-        "operationId": "CreateFile",
+        "operationId": "CreateDirectory",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "IsDirectory": {
-                    "type": "boolean"
-                  },
-                  "File": {
-                    "type": "string",
-                    "format": "binary"
-                  },
                   "ClientDirPath": {
                     "type": "string"
                   },
@@ -183,16 +176,254 @@
                 }
               },
               "encoding": {
-                "IsDirectory": {
-                  "style": "form"
-                },
-                "File": {
-                  "style": "form"
-                },
                 "ClientDirPath": {
                   "style": "form"
                 },
                 "ClientFileName": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDirectoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDirectoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDirectoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/dirs/{fileId}": {
+      "put": {
+        "tags": [
+          "Directories"
+        ],
+        "operationId": "UpdateDirectory",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ClientDirPath": {
+                    "type": "string"
+                  },
+                  "ClientFileName": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "ClientDirPath": {
+                  "style": "form"
+                },
+                "ClientFileName": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDirectoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDirectoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDirectoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Directories"
+        ],
+        "operationId": "DeleteDirectory",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/regular": {
+      "post": {
+        "tags": [
+          "RegularFiles"
+        ],
+        "operationId": "CreateFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "File": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "ClientDirPath": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "File": {
+                  "style": "form"
+                },
+                "ClientDirPath": {
                   "style": "form"
                 }
               }
@@ -243,10 +474,10 @@
         }
       }
     },
-    "/files/{fileId}": {
+    "/files/regular/{fileId}": {
       "get": {
         "tags": [
-          "Files"
+          "RegularFiles"
         ],
         "operationId": "GetLatestFileVersion",
         "parameters": [
@@ -328,7 +559,7 @@
       },
       "put": {
         "tags": [
-          "Files"
+          "RegularFiles"
         ],
         "operationId": "UpdateFile",
         "parameters": [
@@ -354,9 +585,6 @@
                   },
                   "ClientDirPath": {
                     "type": "string"
-                  },
-                  "ClientFileName": {
-                    "type": "string"
                   }
                 }
               },
@@ -365,9 +593,6 @@
                   "style": "form"
                 },
                 "ClientDirPath": {
-                  "style": "form"
-                },
-                "ClientFileName": {
                   "style": "form"
                 }
               }
@@ -439,7 +664,7 @@
       },
       "delete": {
         "tags": [
-          "Files"
+          "RegularFiles"
         ],
         "operationId": "DeleteFile",
         "parameters": [
@@ -500,10 +725,10 @@
         }
       }
     },
-    "/files/{fileId}/{versionNr}": {
+    "/files/regular/{fileId}/{versionNr}": {
       "get": {
         "tags": [
-          "Files"
+          "RegularFiles"
         ],
         "operationId": "GetFileVersion",
         "parameters": [
@@ -757,6 +982,18 @@
   },
   "components": {
     "schemas": {
+      "CreateDirectoryResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "firstFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateFileResponse": {
         "type": "object",
         "properties": {
@@ -889,6 +1126,15 @@
             "$ref": "#/components/schemas/FileDTO"
           },
           "currentFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateDirectoryResponse": {
+        "type": "object",
+        "properties": {
+          "newFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
           }
         },

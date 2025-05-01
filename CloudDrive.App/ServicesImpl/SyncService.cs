@@ -119,8 +119,7 @@ namespace CloudDrive.App.ServicesImpl
 
                 // Tworzymy obiekt FileParameter, który zawiera plik do przesłania
                 var fileParam = new FileParameter(fileStream, path.FileName, "application/octet-stream");
-                //TODO obsługa folderów
-                var resp = await Api.CreateFileAsync(false, fileParam, path.FileName, path.RelativeParentDir);
+                var resp = await Api.CreateFileAsync(fileParam, path.RelativeParentDir);
 
                 _fileVersionState.Add(path, resp.FirstFileVersionInfo);
 

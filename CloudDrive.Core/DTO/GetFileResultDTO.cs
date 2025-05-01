@@ -14,9 +14,5 @@
         /// Relative path to the parent directory of this file or directory on the client side
         /// </summary>
         public string? ClientDirPath { get; set; }
-        /// <summary>
-        /// Is this file a directory
-        /// </summary>
-        public required bool IsDir { get; set; }
     }
 }
