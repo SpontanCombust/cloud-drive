@@ -7,12 +7,12 @@ namespace CloudDrive.Core.Services
         Task<FileVersionDTO> CreateInfoForNewFileVersion(
             Guid fileVersionId,
             Guid fileId, 
-            string clientDirPath, 
+            string? clientDirPath, 
             string clientFileName,
-            string serverDirPath,
-            string serverFileName,
-            string md5Hash,
-            long fileSize
+            string? serverDirPath,
+            string? serverFileName,
+            string? md5Hash,
+            long? fileSize
         );
         Task<FileVersionDTO?> GetInfoForFileVersion(Guid fileVersionId);
         Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr);

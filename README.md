@@ -9,14 +9,31 @@ This is a university project.
 
 ## How-to
 
-### Database
+### Database setup
+
+You have two options here - either have PostgreSQL database installed straight onto your system or use Docker.
+
+#### Manual initialization
+
+Open either pgAdmin or a console through which you will interact with the database service.  
+Use the `db-init/db-init.sh` script to run SQL statements that will setup appropriate databases and users used by the application.  
+When using a console you can use the script directly. Just make sure to change user, database and password to match a super user in your database.  
+When using pgAdmin copy code between `<<EOSQL` and `EOSQL` at the end into the query tool and run all statements.
+
+#### Docker
+
+To bring up the database with Docker in project root do: `docker compose --profile dev up`.
+Similarly to stop the environment without completely removing it do: `docker compose --profile dev stop`.
+
+
+### Database update
 
 1. Bring up development database using docker-compose: `docker compose --profile dev up`.
 2. Open the project in Visual Studio.
-3. Open the `Package Manager Console` view.
-4. Enter `Update-Database` and execute. This will get your local DB up to date with the current schema.
-5. Launch `CloudDrive.WebAPI` to start the REST server
-6. Launch `CloudDrive.App` to start the client application
+3. Choose `CloudDrive.WebAPI` as the Startup Project.
+4. Open the `Package Manager Console` view.
+5. In it choose `CloudDrive.Infrastructure` as the Default project.
+6. Enter `Update-Database` and execute. This will get your local DB up to date with the current schema.
 
 
 ## Secrets

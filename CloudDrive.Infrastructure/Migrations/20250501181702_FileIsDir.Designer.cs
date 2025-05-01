@@ -3,6 +3,7 @@ using System;
 using CloudDrive.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CloudDrive.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250501181702_FileIsDir")]
+    partial class FileIsDir
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,7 +116,7 @@ namespace CloudDrive.Infrastructure.Migrations
             modelBuilder.Entity("CloudDrive.Core.Domain.Entities.File", b =>
                 {
                     b.HasOne("CloudDrive.Core.Domain.Entities.User", "User")
-                        .WithMany("Files")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -124,22 +127,12 @@ namespace CloudDrive.Infrastructure.Migrations
             modelBuilder.Entity("CloudDrive.Core.Domain.Entities.FileVersion", b =>
                 {
                     b.HasOne("CloudDrive.Core.Domain.Entities.File", "File")
-                        .WithMany("FileVersions")
+                        .WithMany()
                         .HasForeignKey("FileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("File");
-                });
-
-            modelBuilder.Entity("CloudDrive.Core.Domain.Entities.File", b =>
-                {
-                    b.Navigation("FileVersions");
-                });
-
-            modelBuilder.Entity("CloudDrive.Core.Domain.Entities.User", b =>
-                {
-                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }

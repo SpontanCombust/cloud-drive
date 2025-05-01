@@ -20,12 +20,12 @@ namespace CloudDrive.Infrastructure.Services
         public async Task<FileVersionDTO> CreateInfoForNewFileVersion(
             Guid fileVersionId, 
             Guid fileId, 
-            string clientDirPath, 
+            string? clientDirPath, 
             string clientFileName, 
-            string serverDirPath, 
-            string serverFileName, 
-            string md5Hash, 
-            long fileSize)
+            string? serverDirPath, 
+            string? serverFileName, 
+            string? md5Hash, 
+            long? fileSize)
         {
             int newVersionNr = await dbContext.FileVersions
                 .Where(fv => fv.FileId == fileId)

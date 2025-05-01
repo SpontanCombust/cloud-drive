@@ -28,16 +28,26 @@ namespace CloudDrive.WebAPI.Controllers
         /// </summary>
         [HttpGet(Name = "SyncAll")]
         [Authorize]
+        [ProducesResponseType(typeof(SyncAllResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<SyncAllResponse>> SyncAll()
         {
             Guid userId = User.GetId();
-            var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
-            var resp = new SyncAllResponse { 
-                CurrentFileVersionsInfos = infoDtos 
-            };
+            try
+            {
+                var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
 
-            return Ok(resp);
+                var resp = new SyncAllResponse { 
+                    CurrentFileVersionsInfos = infoDtos 
+                };
+
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
