@@ -18,7 +18,7 @@ namespace CloudDrive.Infrastructure.Migrations
                 defaultValue: false);
 
             migrationBuilder.AlterColumn<long>(
-                name: "SizeByes",
+                name: "SizeBytes",
                 table: "FileVersions",
                 type: "bigint",
                 nullable: true,

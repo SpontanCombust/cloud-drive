@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CloudDrive.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250415143404_FileIsDir")]
+    [Migration("20250501181702_FileIsDir")]
     partial class FileIsDir
     {
         /// <inheritdoc />
@@ -75,7 +75,7 @@ namespace CloudDrive.Infrastructure.Migrations
                     b.Property<string>("ServerFileName")
                         .HasColumnType("text");
 
-                    b.Property<long?>("SizeByes")
+                    b.Property<long?>("SizeBytes")
                         .HasColumnType("bigint");
 
                     b.Property<int>("VersionNr")
