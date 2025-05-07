@@ -8,5 +8,7 @@ namespace CloudDrive.App.Services
 {
     internal interface Interface1
     {
+        void Start();
+        void Stop();
     }
 }
