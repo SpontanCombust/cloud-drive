@@ -3,6 +3,7 @@ using CloudDrive.Infrastructure.Repositories;
 using CloudDrive.Infrastructure.Services;
 using CloudDrive.WebAPI.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -81,6 +82,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHttpLogging(o => {
+    o.CombineLogs = true;
+    o.LoggingFields = HttpLoggingFields.All;
+});
+
 
 var app = builder.Build();
 
@@ -93,6 +99,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHttpLogging();
 
 app.MapControllers();
 
