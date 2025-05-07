@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CloudDrive.App.Services
 {
-    internal interface Interface1
+    public interface IFileSystemWatcher
     {
         void Start();
         void Stop();
