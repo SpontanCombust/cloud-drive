@@ -7,12 +7,38 @@
 
 
 table(USER) {
-    pk(USER_ID): BIGINT NOT NULL
+    pk(USER_ID): UUID NOT NULL
     --
     column(EMAIL): TEXT NOT NULL
     column(PASSWORD): TEXT NOT NULL
     column(CREATED_DATE): DATETIME NOT NULL
     column(MODIFIED_DATE): DATETIME
 }
+
+table(FILE) {
+    pk(FILE_ID): UUID NOT NULL
+    --
+    fk(USER_ID): UUID NOT NULL
+    --
+    column(DELETED): BOOLEAN DEFAULT FALSE
+}
+
+table(FILE_VERSION) {
+    pk(FILE_VERSION_ID): UUID NOT NULL
+    --
+    fk(FILE_ID): UUID NOT NULL
+    --
+    column(CLIENT_DIR_PATH): TEXT
+    column(CLIENT_FILE_NAME): TEXT
+    column(SERVER_DIR_PATH): TEXT
+    column(SERVER_FILE_NAME): TEXT
+    column(VERSION_NR): INT DEFAULT 0
+    column(MD5): VARCHAR(32)
+    column(SIZE_BYTES): BIGINT
+    column(CREATED_DATE): DATETIME NOT NULL
+}
+
+USER --o{ FILE
+FILE --|{ FILE_VERSION
 
 @enduml

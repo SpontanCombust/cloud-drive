@@ -1,0 +1,35 @@
+@startuml
+
+skinparam sequenceMessageAlign center
+
+
+note over Klient1
+Data systemowa - 2025-04-30 12:00 UTC+0
+end note
+/ note over Serwer
+Data systemowa - 2025-04-30 12:00 UTC+0
+end note
+/ note over Klient2
+Data systemowa - 2025-04-30 13:00 UTC+0
+end note
+
+Klient1 -> Serwer : Wysłanie nowej wersji pliku
+
+note over Serwer
+Zapisanie wersji pliku z datą 2025-04-30 12:01 UTC+0
+end note
+
+note over Klient2
+2025-04-30 13:01 UTC+0
+end note
+
+Serwer -> Klient2 : Pobranie stanu
+
+note over Klient2
+Plik na serwerze jest wciąż starszy od mojego
+end note
+
+Serwer <- Klient2 : Wysłanie starej wersji pliku jako nowej
+
+
+@enduml
