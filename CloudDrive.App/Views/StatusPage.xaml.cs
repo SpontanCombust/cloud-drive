@@ -25,12 +25,16 @@ namespace CloudDrive.App.Views
         private readonly ILogRelayService _logRelay;
         private readonly ILogHistoryService _logHistory;
         private readonly ISyncService _syncService;
+        private readonly IViewLocator _viewLocator;
+        private readonly IFileSystemWatcher _fileSystemWatcher;
 
-        public StatusPage(ILogRelayService logRelay, ILogHistoryService logHistory, ISyncService syncService)
+        public StatusPage(ILogRelayService logRelay, ILogHistoryService logHistory, ISyncService syncService, IViewLocator viewLocator, IFileSystemWatcher fileSystemWatcher)
         {
             _logRelay = logRelay;
             _logHistory = logHistory;
             _syncService = syncService;
+            _viewLocator = viewLocator;
+            _fileSystemWatcher = fileSystemWatcher;
 
             InitializeComponent();
 
@@ -38,11 +42,23 @@ namespace CloudDrive.App.Views
             foreach(var e in logHistory.GetHistory() ) {
                 LogTextBox.Text += e.Message + Environment.NewLine;
             }
+
+            try
+            {
+                _fileSystemWatcher.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Nie udało się uruchomić obserwatora: " + ex.Message);
+            }
         }
 
         private void onLogAdded(object? sender, LogMessageEventArgs e)
         {
-            LogTextBox.Text += e.Message + Environment.NewLine;
+            Dispatcher.Invoke(() =>
+            {
+                LogTextBox.Text += e.Message + Environment.NewLine;
+            });
         }
 
         private void FullSyncButton_Click(object sender, RoutedEventArgs e)
@@ -53,6 +69,28 @@ namespace CloudDrive.App.Views
             }
             catch (Exception ex) {
                 MessageBox.Show("Błąd w synchronizacji: " + ex.Message);
+            }
+        }
+
+        private void logout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _fileSystemWatcher.Stop();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd zatrzymywania obserwatora: " + ex.Message);
+            }
+            var loginPage = _viewLocator.LoginPage();
+
+            if (NavigationService != null)
+            {
+                NavigationService.Navigate(loginPage);
+            }
+            else
+            {
+                Application.Current.MainWindow.Content = loginPage;
             }
         }
     }

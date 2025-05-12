@@ -16,10 +16,10 @@ namespace CloudDrive.App.ServicesImpl
 
         private bool _disposed = false;
 
-        public FileSystemSyncWatcher(ISyncService syncService, string watchedFolder, ILogger<FileSystemSyncWatcher> logger)
+        public FileSystemSyncWatcher(ISyncService syncService, IUserSettingsService settings, ILogger<FileSystemSyncWatcher> logger)
         {
             _syncService = syncService;
-            _watchedFolder = watchedFolder;
+            _watchedFolder = settings.WatchedFolderPath ?? throw new ArgumentException("Ścieżka nie została ustawiona.");
             _logger = logger;
 
             if (!Directory.Exists(_watchedFolder))
