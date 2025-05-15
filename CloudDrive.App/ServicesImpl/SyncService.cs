@@ -108,7 +108,7 @@ namespace CloudDrive.App.ServicesImpl
             );
         }
 
-        private async Task UploadFileAsync(WatchedFileSystemPath path)
+        public async Task UploadFileAsync(WatchedFileSystemPath path)
         {
             if (!path.Exists)
                 throw new Exception("Plik nie istnieje");

@@ -9,12 +9,14 @@
       Title="StatusPage" Height="350" Width="450">
 
     <Grid Background="#FAFAFA">
-        <StackPanel Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Height="308">
 
             <Label Content="Logi synchronizacji:"/>
             <TextBox x:Name="LogTextBox" Width="350" Height="160" Margin="0,0,0,20" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True"/>
             <Button x:Name="FullSyncButton" Content="Pełna synchronizacja" Width="250" Height="30" Click="FullSyncButton_Click"/>
+            <Button x:Name="logout" Content="Wylogowanie" Margin="0,20,0,0"  Width="250" Height="30" Click="logout_Click" />
 
         </StackPanel>
+      
     </Grid>
 </Page>

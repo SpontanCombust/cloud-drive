@@ -33,6 +33,7 @@ namespace CloudDrive.App
                 .AddSingleton<IUserSettingsService, AppDataUserSettingsService>()
                 .AddSingleton<IViewLocator, ViewLocator>()
                 .AddSingleton<IAccessTokenHolder, WebAPIAccessTokenHolder>()
+                .AddSingleton<FileSystemSyncWatcher>()
                 .AddSingleton<WebAPIClientFactory>()
                 .AddTransient<WebAPIClient>(provider =>
                 {
@@ -42,6 +43,7 @@ namespace CloudDrive.App
                 .AddSingleton<ISyncService, SyncService>()
                 .AddSingleton<ILogRelayService>(logRelay)
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
+                .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()
                 .AddLogging(builder =>
                 {
                     //builder.ClearProviders();
