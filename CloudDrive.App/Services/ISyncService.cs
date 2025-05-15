@@ -5,6 +5,8 @@ namespace CloudDrive.App.Services
     public interface ISyncService
     {
         Task SynchronizeAllFilesAsync();
-        Task UploadFileAsync(WatchedFileSystemPath path);
+        Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path);
+        Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path);
+        Task RemoveFileFromRemoteAsync(WatchedFileSystemPath path);
     }
 }

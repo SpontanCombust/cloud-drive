@@ -46,7 +46,7 @@ namespace CloudDrive.App.ServicesImpl
                 foreach (var fsPath in filesToDownload)
                 {
                     Guid fileId = _fileVersionState[fsPath].FileId;
-                    syncTasks.Add(DownloadLatestFileAsync(fileId, fsPath));
+                    syncTasks.Add(DownloadLatestFileFromRemoteAsync(fileId, fsPath));
                 }
 
 
@@ -54,7 +54,7 @@ namespace CloudDrive.App.ServicesImpl
 
                 foreach (var fsPath in filesToUpload)
                 {
-                    syncTasks.Add(UploadFileAsync(fsPath));
+                    syncTasks.Add(UploadNewFileToRemoteAsync(fsPath));
                 }
 
                 await Task.WhenAll(syncTasks);
@@ -108,7 +108,7 @@ namespace CloudDrive.App.ServicesImpl
             );
         }
 
-        public async Task UploadFileAsync(WatchedFileSystemPath path)
+        public async Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path)
         {
             if (!path.Exists)
                 throw new Exception("Plik nie istnieje");
@@ -135,7 +135,7 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        private async Task DownloadLatestFileAsync(Guid fileId, WatchedFileSystemPath path)
+        private async Task DownloadLatestFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
         {
             try
             {
@@ -158,6 +158,16 @@ namespace CloudDrive.App.ServicesImpl
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        public Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RemoveFileFromRemoteAsync(WatchedFileSystemPath path)
+        {
+            throw new NotImplementedException();
         }
 
 

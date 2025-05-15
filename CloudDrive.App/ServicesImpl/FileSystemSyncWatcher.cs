@@ -95,7 +95,7 @@ namespace CloudDrive.App.ServicesImpl
 
                     if (!isDir)
                     {
-                        await _syncService.UploadFileAsync(path);
+                        await _syncService.UploadNewFileToRemoteAsync(path);
                         _logger.LogInformation("Zsynchronizowano nowy plik: {Path}", path.Full);
                     }
                     else
