@@ -93,5 +93,10 @@ namespace CloudDrive.App.Views
                 Application.Current.MainWindow.Content = loginPage;
             }
         }
+
+        private void clear_Click(object sender, RoutedEventArgs e)
+        {
+            LogTextBox.Clear();
+        }
     }
 }

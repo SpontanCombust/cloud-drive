@@ -35,6 +35,8 @@ namespace CloudDrive.App.ServicesImpl
             };
 
             _watcher.Created += OnCreated;
+            _watcher.Changed += OnChanged;
+            _watcher.Deleted += OnDeleted;
         }
 
         public void Start()
@@ -43,7 +45,7 @@ namespace CloudDrive.App.ServicesImpl
             {
                 if (!_watcher.EnableRaisingEvents)
                 {
-                    _watcher.EnableRaisingEvents = true;  // Włączamy nasłuchiwanie
+                    _watcher.EnableRaisingEvents = true;
                     _logger.LogInformation("Obserwowanie folderu: {Folder}", _watchedFolder);
                     Console.WriteLine($"Obserwowanie folderu: {_watchedFolder}");
                 }
@@ -66,7 +68,7 @@ namespace CloudDrive.App.ServicesImpl
             {
                 if (_watcher.EnableRaisingEvents)
                 {
-                    _watcher.EnableRaisingEvents = false; // Zatrzymujemy nasłuchiwanie
+                    _watcher.EnableRaisingEvents = false;
                     _logger.LogInformation("Zakończenie obserwowania folderu: {Folder}", _watchedFolder);
                     Console.WriteLine($"Zakończenie obserwowania folderu: {_watchedFolder}");
                 }
@@ -90,22 +92,100 @@ namespace CloudDrive.App.ServicesImpl
             {
                 try
                 {
-                    var isDir = Directory.Exists(e.FullPath);
+                    await Task.Delay(500); // trochę poczekaj, by plik/folder się ustabilizował
+                    bool isDir = Directory.Exists(e.FullPath);
                     var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
 
-                    if (!isDir)
+                    if (isDir)
                     {
-                        await _syncService.UploadNewFileToRemoteAsync(path);
-                        _logger.LogInformation("Zsynchronizowano nowy plik: {Path}", path.Full);
+                        // nowy folder - synchronizuj go
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
+                        }
+                        else
+                        {
+                            await _syncService.UploadNewFolderToRemoteAsync(path);
+                            _logger.LogInformation("Dodano nowy folder na serwerze: {Path}", path.Full);
+                        }
                     }
                     else
                     {
-                        _logger.LogInformation("Nowy folder: {Path}", path.Full);
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                            _logger.LogInformation("Dodano nowy plik na serwer: {Path}", path.Full);
+                        }
+                        else
+                        {
+                            await _syncService.UploadNewFileToRemoteAsync(path);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Błąd synchronizacji folderu: {Path}", e.FullPath);
+                    _logger.LogError(ex, "(Dodawanie) Błąd synchronizacji: {Path}", e.FullPath);
+                }
+            });
+        }
+        public void OnDeleted(object sender, FileSystemEventArgs e)
+        {
+            Console.WriteLine($"Wydarzenie: OnDelete, {e.FullPath}");
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool wasDir = false;
+                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDirectory: false);
+
+                    if (wasDir)
+                    {
+                        await _syncService.RemoveFoldersFromRemoteAsync(path);
+                        _logger.LogInformation("Usunięto folder na serwerze: {Path}", path.Full);
+                    }
+                    else
+                    {
+                        await _syncService.RemoveFileFromRemoteAsync(path);
+                        _logger.LogInformation("Usunięto plik na serwerze: {Path}", path.Full);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Usuwanie) Błąd synchronizacji usunięcia: {Path}", e.FullPath);
+                }
+            });
+        }
+        public void OnChanged(object sender, FileSystemEventArgs e)
+        {
+            Console.WriteLine($"Wydarzenie: OnChanged, {e.FullPath}");
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool isDir = Directory.Exists(e.FullPath);
+                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
+
+                    if (isDir)
+                    {
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
+                        }
+                    }
+                    else
+                    {
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                            _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Modyfikowanie) Błąd synchronizacji: {Path}", e.FullPath);
                 }
             });
         }
