@@ -17,20 +17,28 @@ namespace CloudDrive.App.ServicesImpl
         private readonly WebAPIClientFactory _apiFactory;
         private readonly IUserSettingsService _userSettingsService;
         private readonly ILogger<SyncService> _logger;
+        private readonly IBenchmarkService _benchmarkService;
 
         private Dictionary<WatchedFileSystemPath, FileVersionDTO> _fileVersionState;
 
-        public SyncService(WebAPIClientFactory apiFactory, IUserSettingsService userSettingsService, ILogger<SyncService> logger)
+        public SyncService(
+            WebAPIClientFactory apiFactory, 
+            IUserSettingsService userSettingsService, 
+            ILogger<SyncService> logger,
+            IBenchmarkService benchmarkService)
         {
             _apiFactory = apiFactory;
             _userSettingsService = userSettingsService;
             _logger = logger;
+            _benchmarkService = benchmarkService;
 
             _fileVersionState = new Dictionary<WatchedFileSystemPath, FileVersionDTO>();
         }
 
         public async Task SynchronizeAllFilesAsync()
         {
+            var bench = _benchmarkService.StartBenchmark("Pełna synchronizacja");
+
             try
             {
                 await FetchStateFromRemoteAsync();
@@ -104,15 +112,15 @@ namespace CloudDrive.App.ServicesImpl
             }
             catch (ApiException ex)
             {
-                _logger.LogError(ex, "Błąd komunikacji z serwerem.");
+                _logger.LogError(ex, "Błąd komunikacji z serwerem: " + ex.Response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogError(ex, "Brak dostępu do pliku lub folderu.");
+                _logger.LogError(ex, "Brak dostępu do pliku lub folderu: " + ex.Message);
             }
             catch (IOException ex)
             {
-                _logger.LogError(ex, "Błąd wejścia/wyjścia");
+                _logger.LogError(ex, "Błąd wejścia/wyjścia: " + ex.Message);
             }
             catch (Exception ex)
             {
@@ -127,6 +135,10 @@ namespace CloudDrive.App.ServicesImpl
                     _logger.LogError("Wewnętrzny wyjątek: {Message}", ex.InnerException.Message);
                     _logger.LogError("Ślad stosu wewnętrznego wyjątku: {StackTrace}", ex.InnerException.StackTrace);
                 }
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
             }
         }
 
@@ -188,6 +200,8 @@ namespace CloudDrive.App.ServicesImpl
 
         public async Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
         {
+            var bench = _benchmarkService.StartBenchmark("Pobieranie folderu", path.Relative);
+
             try
             {
                 if (!Directory.Exists(path.Full))
@@ -207,6 +221,10 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, $"Błąd przy tworzeniu lokalnego folderu: {path.Full}");
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
 
         public async Task UploadModifiedFolderToRemoteAsync(WatchedFileSystemPath path)
@@ -223,16 +241,13 @@ namespace CloudDrive.App.ServicesImpl
                 return;
             }
 
-            string parentDir = string.IsNullOrWhiteSpace(path.RelativeParentDir) ? "" : path.RelativeParentDir.Trim();
 
-            _logger.LogDebug("DEBUG: UpdateDirectoryAsync({FileId}, {ParentDir}, {FolderName})",
-                             version.FileId, parentDir, path.FileName);
+            var bench = _benchmarkService.StartBenchmark("Aktualizacja folderu", path.Relative);
+
+            string parentDir = string.IsNullOrWhiteSpace(path.RelativeParentDir) ? "" : path.RelativeParentDir.Trim();
 
             try
             {
-                _logger.LogInformation("Aktualizuję folder na serwerze: {Path}, fileId: {FileId}, parentDir: '{ParentDir}', folderName: {FolderName}",
-                    path.Full, version.FileId, parentDir, path.FileName);
-
                 var resp = await Api.UpdateDirectoryAsync(version.FileId, parentDir, path.FileName);
 
                 _fileVersionState[path] = resp.NewFileVersionInfo;
@@ -246,8 +261,12 @@ namespace CloudDrive.App.ServicesImpl
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd ogólny przy aktualizacji folderu: {Path}", path.Full);
+                _logger.LogError(ex, "Błąd przy aktualizacji folderu: {Path}", path.Full);
                 throw;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
             }
         }
 
@@ -260,6 +279,9 @@ namespace CloudDrive.App.ServicesImpl
             }
             if (!path.Exists || !path.IsDirectory)
                 throw new Exception($"Folder nie istnieje lub nie jest folderem: {path.Full}");
+
+
+            var bench = _benchmarkService.StartBenchmark("Nowy folder", path.Relative);
 
             try
             {
@@ -279,7 +301,12 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, "Błąd ogólny przy wysyłaniu folderu: {Path}", path.Full);
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
+
         public async Task RemoveFoldersFromRemoteAsync(WatchedFileSystemPath path)
         {
             if (!_fileVersionState.TryGetValue(path, out var version))
@@ -287,6 +314,9 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogWarning("Nie znaleziono folderu do usunięcia: {Path}", path.Full);
                 return;
             }
+
+
+            var bench = _benchmarkService.StartBenchmark("Usuwanie folderu", path.Relative);
 
             try
             {
@@ -300,48 +330,15 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, $"Błąd przy usuwaniu folderu: {path.Full}");
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
 
 
         //Pliki
-        public async Task DeleteFileAsync(Guid fileId, WatchedFileSystemPath path)
-        {
-            try
-            {
-                await Api.DeleteFileAsync(fileId);
-                _fileVersionState.Remove(path);
-                _logger.LogInformation($"Usunięto plik z serwera: {path.Full}");
-            }
-            catch (ApiException ex)
-            {
-                _logger.LogError(ex, $"Błąd przy usuwaniu pliku {path.Full} z serwera");
-            }
-        }
-        public async Task UpdateFileAsync(Guid fileId, WatchedFileSystemPath path)
-        {
-            try
-            {
-                using var fileStream = File.OpenRead(path.Full);
-                var fileParam = new FileParameter(fileStream, path.FileName, "application/octet-stream");
 
-                var resp = await Api.UpdateFileAsync(fileId, fileParam, path.RelativeParentDir);
-
-                // Użyj właściwości NewFileVersionInfo, by zaktualizować stan
-                _fileVersionState[path] = resp.NewFileVersionInfo;
-
-                _logger.LogInformation($"Zmodyfikowano plik: {path.Full}");
-            }
-            catch (ApiException ex)
-            {
-                _logger.LogError(ex, $"Błąd API przy modyfikacji pliku {path.Full}");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Błąd ogólny przy modyfikacji pliku {path.Full}");
-                throw;
-            }
-        }
         public async Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path)
         {
             if (path.FileName.StartsWith("~$"))
@@ -349,8 +346,12 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
                 return;
             }
+
             if (!path.Exists)
                 throw new Exception("Plik nie istnieje");
+
+
+            var bench = _benchmarkService.StartBenchmark("Nowy plik", path.Relative);
 
             try
             {
@@ -372,10 +373,16 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, "UploadNewFileToRemoteAsync nie powiódł się: {Path}", path.Full);
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
 
         private async Task DownloadLatestFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
         {
+            var bench = _benchmarkService.StartBenchmark("Pobieranie pliku", path.Relative);
+
             try
             {
                 var fileResponse = await Api.GetLatestFileVersionAsync(fileId);
@@ -397,6 +404,10 @@ namespace CloudDrive.App.ServicesImpl
             {
                 throw new Exception(ex.Message);
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
 
         public async Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
@@ -415,6 +426,9 @@ namespace CloudDrive.App.ServicesImpl
             {
                 throw new InvalidOperationException("Nie znaleziono wersji pliku na serwerze.");
             }
+
+
+            var bench = _benchmarkService.StartBenchmark("Aktualizacja pliku", path.Relative);
 
             try
             {
@@ -435,6 +449,10 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, "Błąd ogólny przy modyfikacji pliku: {Path}", path.Full);
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
 
         public async Task RemoveFileFromRemoteAsync(WatchedFileSystemPath path)
@@ -444,6 +462,9 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogWarning("Nie znaleziono pliku do usunięcia: {Path}", path.Full);
                 return;
             }
+
+
+            var bench = _benchmarkService.StartBenchmark("Usuwanie pliku", path.Relative);
 
             try
             {
@@ -460,7 +481,13 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogError(ex, "Błąd ogólny przy usuwaniu pliku: {Path}", path.Full);
                 throw;
             }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
         }
+
+
 
         private HashSet<WatchedFileSystemPath> ScanWatchedFolder()
         {

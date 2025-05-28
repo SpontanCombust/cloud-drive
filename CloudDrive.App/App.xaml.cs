@@ -44,6 +44,7 @@ namespace CloudDrive.App
                 .AddSingleton<ILogRelayService>(logRelay)
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
                 .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()
+                .AddSingleton<IBenchmarkService, BenchmarkService>()
                 .AddLogging(builder =>
                 {
                     //builder.ClearProviders();

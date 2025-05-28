@@ -74,7 +74,7 @@ namespace CloudDrive.App.Views
             }
             catch (ApiException ex)
             {
-                StatusTextBlock.Text = "Błąd logowania bloku: " + ex.Response;
+                StatusTextBlock.Text = "Błąd logowania: " + ex.Response;
             }
             catch (Exception ex)
             {

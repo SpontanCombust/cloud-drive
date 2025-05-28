@@ -27,14 +27,22 @@ namespace CloudDrive.App.Views
         private readonly ISyncService _syncService;
         private readonly IViewLocator _viewLocator;
         private readonly IFileSystemWatcher _fileSystemWatcher;
+        private readonly IBenchmarkService _benchmarkService;
 
-        public StatusPage(ILogRelayService logRelay, ILogHistoryService logHistory, ISyncService syncService, IViewLocator viewLocator, IFileSystemWatcher fileSystemWatcher)
+        public StatusPage(
+            ILogRelayService logRelay, 
+            ILogHistoryService logHistory, 
+            ISyncService syncService, 
+            IViewLocator viewLocator, 
+            IFileSystemWatcher fileSystemWatcher,
+            IBenchmarkService benchmarkService)
         {
             _logRelay = logRelay;
             _logHistory = logHistory;
             _syncService = syncService;
             _viewLocator = viewLocator;
             _fileSystemWatcher = fileSystemWatcher;
+            _benchmarkService = benchmarkService;
 
             InitializeComponent();
 
@@ -45,6 +53,9 @@ namespace CloudDrive.App.Views
 
             Task.Run(async () =>
             {
+                // daj czas na pokazanie okna
+                await Task.Delay(2000);
+
                 try
                 {
                     await _syncService.SynchronizeAllFilesAsync();
@@ -109,6 +120,18 @@ namespace CloudDrive.App.Views
         private void clear_Click(object sender, RoutedEventArgs e)
         {
             LogTextBox.Clear();
+        }
+
+        private void ViewBenchmarkButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _benchmarkService.OpenBenchmarkFile();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd otwarcia pliku: " + ex.Message);
+            }
         }
     }
 }

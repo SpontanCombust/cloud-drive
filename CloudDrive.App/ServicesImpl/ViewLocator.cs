@@ -34,7 +34,8 @@ namespace CloudDrive.App.ServicesImpl
             var logHistoryService = _serviceProvider.GetRequiredService<ILogHistoryService>();
             var syncService = _serviceProvider.GetRequiredService<ISyncService>();
             var fileSystemWatcher = _serviceProvider.GetRequiredService<IFileSystemWatcher>();
-            return new StatusPage(logRelayService, logHistoryService, syncService, this, fileSystemWatcher);
+            var benchmarkService = _serviceProvider.GetRequiredService<IBenchmarkService>();
+            return new StatusPage(logRelayService, logHistoryService, syncService, this, fileSystemWatcher, benchmarkService);
         }
     }
 }
