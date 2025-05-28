@@ -1,0 +1,41 @@
+[
+  {
+    "Name": "Debug All",
+    "Projects": [
+      {
+        "Path": "CloudDrive.WebAPI\\CloudDrive.WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CloudDrive.App\\CloudDrive.App.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Run Server, Debug Client",
+    "Projects": [
+      {
+        "Path": "CloudDrive.WebAPI\\CloudDrive.WebAPI.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "CloudDrive.App\\CloudDrive.App.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Debug Server, Run Client",
+    "Projects": [
+      {
+        "Path": "CloudDrive.WebAPI\\CloudDrive.WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CloudDrive.App\\CloudDrive.App.csproj",
+        "Action": "StartWithoutDebugging"
+      }
+    ]
+  }
+]

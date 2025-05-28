@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Run All",
+    "Projects": [
+      {
+        "Path": "CloudDrive.WebAPI\\CloudDrive.WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "CloudDrive.App\\CloudDrive.App.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
