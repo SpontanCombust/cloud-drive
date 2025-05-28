@@ -26,7 +26,7 @@ namespace CloudDrive.WebAPI.Controllers
         // Upload new file to the server
         [HttpPost(Name = "CreateDirectory")]
         [ProducesResponseType(typeof(CreateDirectoryResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<CreateDirectoryResponse>> Create([FromForm] CreateDirectoryRequest req)
         {
             Guid userId = User.GetId();
@@ -51,8 +51,8 @@ namespace CloudDrive.WebAPI.Controllers
 
         [HttpPut("{fileId}", Name = "UpdateDirectory")]
         [ProducesResponseType(typeof(UpdateDirectoryResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UpdateDirectoryResponse>> Update([FromRoute] Guid fileId, [FromForm] UpdateDirectoryRequest req)
         {
             Guid userId = User.GetId();
@@ -80,8 +80,8 @@ namespace CloudDrive.WebAPI.Controllers
 
         [HttpDelete("{fileId}", Name = "DeleteDirectory")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();

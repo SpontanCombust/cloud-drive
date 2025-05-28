@@ -26,7 +26,7 @@ namespace CloudDrive.WebAPI.Controllers
         // Upload new file to the server
         [HttpPost(Name = "CreateFile")]
         [ProducesResponseType(typeof(CreateFileResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<CreateFileResponse>> Create([FromForm] CreateFileRequest req)
         {
             Guid userId = User.GetId();
@@ -55,8 +55,8 @@ namespace CloudDrive.WebAPI.Controllers
         [HttpGet("{fileId}", Name = "GetLatestFileVersion")]
         //TODO use more of these attributes elsewhere
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetLatestVersion(Guid fileId)
         {
             Guid userId = User.GetId();
@@ -88,8 +88,8 @@ namespace CloudDrive.WebAPI.Controllers
         // Get a specific version of the file from the server
         [HttpGet("{fileId}/{versionNr}", Name = "GetFileVersion")]
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetVersion(Guid fileId, int versionNr)
         {
             Guid userId = User.GetId();
@@ -120,8 +120,8 @@ namespace CloudDrive.WebAPI.Controllers
 
         [HttpPut("{fileId}", Name = "UpdateFile")]
         [ProducesResponseType(typeof(UpdateFileResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UpdateFileResponse>> Update([FromRoute] Guid fileId, [FromForm] UpdateFileRequest req)
         {
             Guid userId = User.GetId();
@@ -151,8 +151,8 @@ namespace CloudDrive.WebAPI.Controllers
 
         [HttpDelete("{fileId}", Name = "DeleteFile")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();
