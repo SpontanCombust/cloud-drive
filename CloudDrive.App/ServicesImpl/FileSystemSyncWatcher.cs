@@ -36,6 +36,7 @@ namespace CloudDrive.App.ServicesImpl
 
             _watcher.Created += OnCreated;
             _watcher.Changed += OnChanged;
+            _watcher.Renamed += OnRenamed;
             _watcher.Deleted += OnDeleted;
         }
 
@@ -85,7 +86,9 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        public void OnCreated(object sender, FileSystemEventArgs e)
+
+
+        private void OnCreated(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine($"Wydarzenie: OnCreated, {e.FullPath}");
             Task.Run(async () =>
@@ -102,7 +105,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(path, out var fileId))
                         {
                             await _syncService.UploadModifiedFolderToRemoteAsync(path);
-                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
                         }
                         else
                         {
@@ -129,7 +131,8 @@ namespace CloudDrive.App.ServicesImpl
                 }
             });
         }
-        public void OnDeleted(object sender, FileSystemEventArgs e)
+
+        private void OnDeleted(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine($"Wydarzenie: OnDelete, {e.FullPath}");
             Task.Run(async () =>
@@ -156,7 +159,8 @@ namespace CloudDrive.App.ServicesImpl
                 }
             });
         }
-        public void OnChanged(object sender, FileSystemEventArgs e)
+
+        private void OnChanged(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine($"Wydarzenie: OnChanged, {e.FullPath}");
             Task.Run(async () =>
@@ -189,6 +193,43 @@ namespace CloudDrive.App.ServicesImpl
                 }
             });
         }
+
+        private void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            Console.WriteLine($"Wydarzenie: OnRenamed, {e.FullPath}");
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool isDir = Directory.Exists(e.FullPath);
+                    var oldPath = new WatchedFileSystemPath(e.OldFullPath, _watchedFolder, isDir);
+                    var newPath = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
+
+                    if (isDir)
+                    {
+                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        {
+                            await _syncService.UploadRenamedFolderToRemoteAsync(oldPath, newPath);
+                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", oldPath.Full);
+                        }
+                    }
+                    else
+                    {
+                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        {
+                            await _syncService.UploadRenamedFileToRemoteAsync(oldPath, newPath);
+                            _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", oldPath.Full);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Zmiana nazwy) Błąd synchronizacji {Path}", e.FullPath);
+                }
+            });
+        }
+
+
 
         public void Dispose()
         {

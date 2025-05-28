@@ -8,11 +8,12 @@ namespace CloudDrive.App.Services
 
         Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path);
         Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path);
+        Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath);
         Task RemoveFileFromRemoteAsync(WatchedFileSystemPath path);
 
         Task UploadNewFolderToRemoteAsync(WatchedFileSystemPath path);
-        Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path);
         Task UploadModifiedFolderToRemoteAsync(WatchedFileSystemPath path);
+        Task UploadRenamedFolderToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath);
         Task RemoveFoldersFromRemoteAsync(WatchedFileSystemPath path);
 
         bool TryGetFileId(WatchedFileSystemPath path, out Guid fileId);

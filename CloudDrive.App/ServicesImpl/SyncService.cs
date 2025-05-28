@@ -198,7 +198,7 @@ namespace CloudDrive.App.ServicesImpl
 
         //Foldery
 
-        public async Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
+        private async Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
         {
             var bench = _benchmarkService.StartBenchmark("Pobieranie folderu", path.Relative);
 
@@ -229,12 +229,6 @@ namespace CloudDrive.App.ServicesImpl
 
         public async Task UploadModifiedFolderToRemoteAsync(WatchedFileSystemPath path)
         {
-            if (path.FileName.StartsWith("~$"))
-            {
-                _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
-                return;
-            }
-
             if (!_fileVersionState.TryGetValue(path, out var version))
             {
                 _logger.LogWarning("Nie znaleziono folderu do aktualizacji: {Path}", path.Full);
@@ -262,6 +256,45 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy aktualizacji folderu: {Path}", path.Full);
+                throw;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        public async Task UploadRenamedFolderToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath)
+        {
+            if (!_fileVersionState.TryGetValue(oldPath, out var version))
+            {
+                _logger.LogWarning("Nie znaleziono folderu do aktualizacji: {Path}", oldPath.Full);
+                return;
+            }
+
+
+            var bench = _benchmarkService.StartBenchmark("Zmiana nazwy folderu", oldPath.Relative);
+
+            string parentDir = string.IsNullOrWhiteSpace(newPath.RelativeParentDir) ? "" : newPath.RelativeParentDir.Trim();
+
+            try
+            {
+                var resp = await Api.UpdateDirectoryAsync(version.FileId, parentDir, newPath.FileName);
+
+                _fileVersionState[newPath] = resp.NewFileVersionInfo;
+                _fileVersionState.Remove(oldPath);
+
+                _logger.LogInformation("Zaktualizowano folder na serwerze: {OldPath} -> {NewPath}", oldPath.Full, newPath.Full);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy zmianie nazwy folderu folderu: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    oldPath.Full, ex.StatusCode, ex.Response);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy zmianie nazwy folderu {Path}", oldPath.Full);
                 throw;
             }
             finally
@@ -335,6 +368,7 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
+
 
 
         //Pliki
@@ -447,6 +481,53 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd ogólny przy modyfikacji pliku: {Path}", path.Full);
+                throw;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        public async Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath)
+        {
+            if (newPath.FileName.StartsWith("~$"))
+            {
+                _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", newPath.Full);
+                return;
+            }
+
+            if (!newPath.Exists)
+            {
+                throw new FileNotFoundException("Nie znaleziono pliku lokalnie", newPath.Full);
+            }
+
+            if (!_fileVersionState.TryGetValue(oldPath, out var version))
+            {
+                throw new InvalidOperationException("Nie znaleziono wersji pliku na serwerze.");
+            }
+
+
+            var bench = _benchmarkService.StartBenchmark("Zmiana nazwy pliku", oldPath.Relative);
+
+            try
+            {
+                using var fileStream = File.OpenRead(newPath.Full);
+                var fileParam = new FileParameter(fileStream, newPath.FileName, "application/octet-stream");
+
+                var updatedVersion = await Api.UpdateFileAsync(version.FileId, fileParam, newPath.RelativeParentDir);
+
+                _fileVersionState[newPath] = updatedVersion.NewFileVersionInfo;
+                _fileVersionState.Remove(oldPath);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy zmianie nazwy pliku: {Path}", oldPath.Full);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd ogólny przy zmianie nazwy pliku: {Path}", oldPath.Full);
                 throw;
             }
             finally
