@@ -54,7 +54,7 @@ namespace CloudDrive.App.Views
             Task.Run(async () =>
             {
                 // daj czas na pokazanie okna
-                await Task.Delay(2000);
+                await Task.Delay(500);
 
                 try
                 {
