@@ -48,18 +48,15 @@ namespace CloudDrive.App.ServicesImpl
                 {
                     _watcher.EnableRaisingEvents = true;
                     _logger.LogInformation("Obserwowanie folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Obserwowanie folderu: {_watchedFolder}");
                 }
                 else
                 {
                     _logger.LogWarning("Folder już jest obserwowany: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Folder już jest obserwowany: {_watchedFolder}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy starcie nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy starcie nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
             }
         }
 
@@ -71,18 +68,15 @@ namespace CloudDrive.App.ServicesImpl
                 {
                     _watcher.EnableRaisingEvents = false;
                     _logger.LogInformation("Zakończenie obserwowania folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Zakończenie obserwowania folderu: {_watchedFolder}");
                 }
                 else
                 {
                     _logger.LogWarning("Nasłuchiwanie już zostało zakończone dla folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Nasłuchiwanie już zostało zakończone dla folderu: {_watchedFolder}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy próbie zakończenia nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy zakończeniu nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
             }
         }
 
@@ -90,7 +84,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private void OnCreated(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnCreated, {e.FullPath}");
+            _logger.LogDebug("Wydarzenie: OnCreated, {}", e.FullPath);
             Task.Run(async () =>
             {
                 try
@@ -109,7 +103,6 @@ namespace CloudDrive.App.ServicesImpl
                         else
                         {
                             await _syncService.UploadNewFolderToRemoteAsync(path);
-                            _logger.LogInformation("Dodano nowy folder na serwerze: {Path}", path.Full);
                         }
                     }
                     else
@@ -117,7 +110,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(path, out var fileId))
                         {
                             await _syncService.UploadModifiedFileToRemoteAsync(path);
-                            _logger.LogInformation("Dodano nowy plik na serwer: {Path}", path.Full);
                         }
                         else
                         {
@@ -134,7 +126,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private void OnDeleted(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnDelete, {e.FullPath}");
+            _logger.LogDebug("Wydarzenie: OnDelete, {}", e.FullPath);
             Task.Run(async () =>
             {
                 try
@@ -145,12 +137,10 @@ namespace CloudDrive.App.ServicesImpl
                     if (wasDir)
                     {
                         await _syncService.RemoveFoldersFromRemoteAsync(path);
-                        _logger.LogInformation("Usunięto folder na serwerze: {Path}", path.Full);
                     }
                     else
                     {
                         await _syncService.RemoveFileFromRemoteAsync(path);
-                        _logger.LogInformation("Usunięto plik na serwerze: {Path}", path.Full);
                     }
                 }
                 catch (Exception ex)
@@ -162,7 +152,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnChanged, {e.FullPath}");
+            _logger.LogDebug("Wydarzenie: OnChanged, {}", e.FullPath);
             Task.Run(async () =>
             {
                 try
@@ -175,7 +165,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(path, out var fileId))
                         {
                             await _syncService.UploadModifiedFolderToRemoteAsync(path);
-                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
                         }
                     }
                     else
@@ -183,7 +172,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(path, out var fileId))
                         {
                             await _syncService.UploadModifiedFileToRemoteAsync(path);
-                            _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
                         }
                     }
                 }
@@ -196,7 +184,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnRenamed, {e.FullPath}");
+            _logger.LogDebug("Wydarzenie: OnRenamed, {}", e.FullPath);
             Task.Run(async () =>
             {
                 try
@@ -210,7 +198,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(oldPath, out var fileId))
                         {
                             await _syncService.UploadRenamedFolderToRemoteAsync(oldPath, newPath);
-                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", oldPath.Full);
                         }
                     }
                     else
@@ -218,7 +205,6 @@ namespace CloudDrive.App.ServicesImpl
                         if (_syncService.TryGetFileId(oldPath, out var fileId))
                         {
                             await _syncService.UploadRenamedFileToRemoteAsync(oldPath, newPath);
-                            _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", oldPath.Full);
                         }
                     }
                 }

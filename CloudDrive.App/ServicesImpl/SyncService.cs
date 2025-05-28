@@ -245,6 +245,7 @@ namespace CloudDrive.App.ServicesImpl
                 var resp = await Api.UpdateDirectoryAsync(version.FileId, parentDir, path.FileName);
 
                 _fileVersionState[path] = resp.NewFileVersionInfo;
+
                 _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
             }
             catch (ApiException ex)
@@ -354,6 +355,7 @@ namespace CloudDrive.App.ServicesImpl
             try
             {
                 await Api.DeleteDirectoryAsync(version.FileId);
+
                 _fileVersionState.Remove(path);
 
                 _logger.LogInformation($"Usunięto folder z serwera: {path.Full}");
@@ -472,6 +474,8 @@ namespace CloudDrive.App.ServicesImpl
                 var updatedVersion = await Api.UpdateFileAsync(version.FileId, fileParam, path.RelativeParentDir);
 
                 _fileVersionState[path] = updatedVersion.NewFileVersionInfo;
+
+                _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
             }
             catch (ApiException ex)
             {
@@ -519,6 +523,8 @@ namespace CloudDrive.App.ServicesImpl
 
                 _fileVersionState[newPath] = updatedVersion.NewFileVersionInfo;
                 _fileVersionState.Remove(oldPath);
+
+                _logger.LogInformation("Zaktualizowano plik na serwerze: {OldPath} -> {NewPath}", oldPath.Full, newPath.Full);
             }
             catch (ApiException ex)
             {
@@ -550,7 +556,10 @@ namespace CloudDrive.App.ServicesImpl
             try
             {
                 await Api.DeleteFileAsync(version.FileId);
+
                 _fileVersionState.Remove(path);
+
+                _logger.LogInformation("Usunięto plik na serwerze: {Path}", path.Full);
             }
             catch (ApiException ex)
             {
