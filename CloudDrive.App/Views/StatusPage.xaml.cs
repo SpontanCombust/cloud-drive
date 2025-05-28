@@ -43,14 +43,26 @@ namespace CloudDrive.App.Views
                 LogTextBox.Text += e.Message + Environment.NewLine;
             }
 
-            try
+            Task.Run(async () =>
             {
-                _fileSystemWatcher.Start();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Nie udało się uruchomić obserwatora: " + ex.Message);
-            }
+                try
+                {
+                    await _syncService.SynchronizeAllFilesAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Błąd synchronizacji wstępnej: " + ex.Message);
+                }
+
+                try
+                {
+                    _fileSystemWatcher.Start();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Nie udało się uruchomić obserwatora: " + ex.Message);
+                }
+            });
         }
 
         private void onLogAdded(object? sender, LogMessageEventArgs e)
