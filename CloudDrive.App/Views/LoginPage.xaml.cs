@@ -15,10 +15,7 @@ namespace CloudDrive.App.Views
         private readonly WebAPIClientFactory _apiFactory;
         
 
-        public LoginPage(
-            IViewLocator viewLocator, 
-            IAccessTokenHolder authTokenHolder, 
-            WebAPIClientFactory apiFactory)
+        public LoginPage(IViewLocator viewLocator, IAccessTokenHolder authTokenHolder, WebAPIClientFactory apiFactory)
         {
             InitializeComponent();
 
@@ -81,7 +78,9 @@ namespace CloudDrive.App.Views
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = "Błąd logowania: " + ex.Message;
+                StatusTextBlock.Text = $"Błąd logowania: {ex.GetType().Name} - {ex.Message}";
+
+
             }
 
         }

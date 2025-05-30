@@ -91,18 +91,21 @@ namespace CloudDrive.App.Model
 
         public override bool Equals(object? obj)
         {
-            return obj is WatchedFileSystemPath path && Equals(path);
+            return obj is WatchedFileSystemPath other && Equals(other);
         }
 
         public bool Equals(WatchedFileSystemPath other)
         {
-            return WatchedFolder == other.WatchedFolder
-                && Full == other.Full;
+            return string.Equals(Full, other.Full, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(WatchedFolder, other.WatchedFolder, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()
         {
-            return Full.GetHashCode();
+            return HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Full),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(WatchedFolder)
+            );
         }
     }
 }
