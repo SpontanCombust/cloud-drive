@@ -29,7 +29,7 @@ namespace CloudDrive.WebAPI.Controllers
         [HttpGet(Name = "SyncAll")]
         [Authorize]
         [ProducesResponseType(typeof(SyncAllResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<SyncAllResponse>> SyncAll()
         {
             Guid userId = User.GetId();
@@ -56,7 +56,7 @@ namespace CloudDrive.WebAPI.Controllers
         [HttpGet("{fileId}", Name = "SyncFile")]
         [Authorize]
         [ProducesResponseType(typeof(SyncFileResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<SyncFileResponse>> SyncFile([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();

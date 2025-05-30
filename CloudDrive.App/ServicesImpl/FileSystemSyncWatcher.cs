@@ -35,6 +35,9 @@ namespace CloudDrive.App.ServicesImpl
             };
 
             _watcher.Created += OnCreated;
+            _watcher.Changed += OnChanged;
+            _watcher.Renamed += OnRenamed;
+            _watcher.Deleted += OnDeleted;
         }
 
         public void Start()
@@ -43,20 +46,17 @@ namespace CloudDrive.App.ServicesImpl
             {
                 if (!_watcher.EnableRaisingEvents)
                 {
-                    _watcher.EnableRaisingEvents = true;  // Włączamy nasłuchiwanie
+                    _watcher.EnableRaisingEvents = true;
                     _logger.LogInformation("Obserwowanie folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Obserwowanie folderu: {_watchedFolder}");
                 }
                 else
                 {
                     _logger.LogWarning("Folder już jest obserwowany: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Folder już jest obserwowany: {_watchedFolder}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy starcie nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy starcie nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
             }
         }
 
@@ -66,49 +66,156 @@ namespace CloudDrive.App.ServicesImpl
             {
                 if (_watcher.EnableRaisingEvents)
                 {
-                    _watcher.EnableRaisingEvents = false; // Zatrzymujemy nasłuchiwanie
+                    _watcher.EnableRaisingEvents = false;
                     _logger.LogInformation("Zakończenie obserwowania folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Zakończenie obserwowania folderu: {_watchedFolder}");
                 }
                 else
                 {
                     _logger.LogWarning("Nasłuchiwanie już zostało zakończone dla folderu: {Folder}", _watchedFolder);
-                    Console.WriteLine($"Nasłuchiwanie już zostało zakończone dla folderu: {_watchedFolder}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy próbie zakończenia nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy zakończeniu nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
             }
         }
 
-        public void OnCreated(object sender, FileSystemEventArgs e)
+
+
+        private void OnCreated(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnCreated, {e.FullPath}");
+            _logger.LogDebug("Wydarzenie: OnCreated, {}", e.FullPath);
             Task.Run(async () =>
             {
                 try
                 {
-                    var isDir = Directory.Exists(e.FullPath);
+                    await Task.Delay(500); // trochę poczekaj, by plik/folder się ustabilizował
+                    bool isDir = Directory.Exists(e.FullPath);
                     var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
 
-                    if (!isDir)
+                    if (isDir)
                     {
-                        await _syncService.UploadFileAsync(path);
-                        _logger.LogInformation("Zsynchronizowano nowy plik: {Path}", path.Full);
+                        // nowy folder - synchronizuj go
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                        }
+                        else
+                        {
+                            await _syncService.UploadNewFolderToRemoteAsync(path);
+                        }
                     }
                     else
                     {
-                        _logger.LogInformation("Nowy folder: {Path}", path.Full);
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                        }
+                        else
+                        {
+                            await _syncService.UploadNewFileToRemoteAsync(path);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Błąd synchronizacji folderu: {Path}", e.FullPath);
+                    _logger.LogError(ex, "(Dodawanie) Błąd synchronizacji: {Path}", e.FullPath);
                 }
             });
         }
+
+        private void OnDeleted(object sender, FileSystemEventArgs e)
+        {
+            _logger.LogDebug("Wydarzenie: OnDelete, {}", e.FullPath);
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool wasDir = false;
+                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDirectory: false);
+
+                    if (wasDir)
+                    {
+                        await _syncService.RemoveFoldersFromRemoteAsync(path);
+                    }
+                    else
+                    {
+                        await _syncService.RemoveFileFromRemoteAsync(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Usuwanie) Błąd synchronizacji usunięcia: {Path}", e.FullPath);
+                }
+            });
+        }
+
+        private void OnChanged(object sender, FileSystemEventArgs e)
+        {
+            _logger.LogDebug("Wydarzenie: OnChanged, {}", e.FullPath);
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool isDir = Directory.Exists(e.FullPath);
+                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
+
+                    if (isDir)
+                    {
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                        }
+                    }
+                    else
+                    {
+                        if (_syncService.TryGetFileId(path, out var fileId))
+                        {
+                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Modyfikowanie) Błąd synchronizacji: {Path}", e.FullPath);
+                }
+            });
+        }
+
+        private void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            _logger.LogDebug("Wydarzenie: OnRenamed, {}", e.FullPath);
+            Task.Run(async () =>
+            {
+                try
+                {
+                    bool isDir = Directory.Exists(e.FullPath);
+                    var oldPath = new WatchedFileSystemPath(e.OldFullPath, _watchedFolder, isDir);
+                    var newPath = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
+
+                    if (isDir)
+                    {
+                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        {
+                            await _syncService.UploadRenamedFolderToRemoteAsync(oldPath, newPath);
+                        }
+                    }
+                    else
+                    {
+                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        {
+                            await _syncService.UploadRenamedFileToRemoteAsync(oldPath, newPath);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "(Zmiana nazwy) Błąd synchronizacji {Path}", e.FullPath);
+                }
+            });
+        }
+
+
 
         public void Dispose()
         {

@@ -222,7 +222,7 @@ namespace CloudDrive.Infrastructure.Services
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
 
-            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, false);
+            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, true);
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 newFileId,
