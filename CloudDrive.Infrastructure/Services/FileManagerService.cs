@@ -183,6 +183,8 @@ namespace CloudDrive.Infrastructure.Services
 
             //FIXME make sure there are no local path conflicts between different active files
 
+            await fileInfoService.UpdateInfoForFile(fileId, null);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 fileId,
@@ -199,12 +201,12 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task DeleteFile(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, true);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: true);
         }
 
         public async Task RestoreFile(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, false);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: false);
         }
 
 
@@ -262,6 +264,8 @@ namespace CloudDrive.Infrastructure.Services
 
             //FIXME make sure there are no local path conflicts between different active files
 
+            await fileInfoService.UpdateInfoForFile(fileId, null);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 fileId,
@@ -273,17 +277,23 @@ namespace CloudDrive.Infrastructure.Services
                 null
             );
 
+            //FIXME dependant files not affected!
+
             return fileVersionInfo;
         }
 
         public async Task DeleteDirectory(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, true);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: true);
+
+            //FIXME dependant files not affected!
         }
 
         public async Task RestoreDirectory(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, false);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: false);
+
+            //FIXME dependant files not affected!
         }
 
 
