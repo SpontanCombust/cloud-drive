@@ -319,7 +319,7 @@
         "tags": [
           "RegularFiles"
         ],
-        "operationId": "GetLatestFileVersion",
+        "operationId": "GetActiveFileVersion",
         "parameters": [
           {
             "name": "fileId",
@@ -642,6 +642,19 @@
           },
           "deleted": {
             "type": "boolean"
+          },
+          "activeFileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -4,6 +4,8 @@ using CloudDrive.Core.Mappers;
 using CloudDrive.Core.Services;
 using CloudDrive.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Linq;
 
 namespace CloudDrive.Infrastructure.Services
 {
@@ -66,6 +68,7 @@ namespace CloudDrive.Infrastructure.Services
             return info?.ToDto();
         }
 
+        [Obsolete("Use GetInfoForActiveFileVersion instead")]
         public async Task<FileVersionDTO?> GetInfoForLatestFileVersion(Guid fileId)
         {
             var info = await dbContext.FileVersions
@@ -75,6 +78,7 @@ namespace CloudDrive.Infrastructure.Services
             return info?.ToDto();
         }
 
+        [Obsolete("Use GetInfoForAllActiveUserFileVersions instead")]
         public async Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId)
         {
             //FIXME client can't distinguish between new and to-be-deleted files; the info for deleted files should still be sent in some way
@@ -103,6 +107,35 @@ namespace CloudDrive.Infrastructure.Services
                 .ToArrayAsync();
 
             return infos.Select(i => i.ToDto()).ToArray();
+        }
+
+        public async Task<FileVersionDTO?> GetInfoForActiveFileVersion(Guid fileId)
+        {
+            var fileInfo = await dbContext.Files.FindAsync(fileId);
+            if (fileInfo == null)
+            {
+                return null;
+            }
+
+            var fileVersionInfo = await dbContext.FileVersions.FindAsync(fileInfo.ActiveFileVersionId);
+
+            return fileVersionInfo?.ToDto();
+        }
+
+        public async Task<FileVersionDTO[]> GetInfoForAllActiveUserFileVersions(Guid userId)
+        {
+            var activeUserFiles = dbContext.Files
+                .Where(f => f.UserId == userId && !f.Deleted);
+
+            var q = from file in dbContext.Files
+                    join fileVersion in dbContext.FileVersions
+                    on file.ActiveFileVersionId equals fileVersion.FileVersionId
+                    where file.UserId == userId && !file.Deleted
+                    select fileVersion;
+
+            var fvs = await q.ToArrayAsync();
+
+            return fvs.Select(fv => fv.ToDto()).ToArray();
         }
 
         public async Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)

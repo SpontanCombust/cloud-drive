@@ -52,12 +52,11 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
         // Get latest version of a given file from the server
-        [HttpGet("{fileId}", Name = "GetLatestFileVersion")]
-        //TODO use more of these attributes elsewhere
+        [HttpGet("{fileId}", Name = "GetActiveFileVersion")]
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
         //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetLatestVersion(Guid fileId)
+        public async Task<IActionResult> GetActiveVersion(Guid fileId)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -67,7 +66,7 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                var result = await fileManagerService.GetLatestFileVersion(fileId);
+                var result = await fileManagerService.GetActiveFileVersion(fileId);
                 if (result == null)
                 {
                     return NotFound();

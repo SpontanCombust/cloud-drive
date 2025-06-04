@@ -36,7 +36,7 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                var infoDtos = await fileVersionInfoService.GetInfoForAllLatestUserFileVersions(userId);
+                var infoDtos = await fileVersionInfoService.GetInfoForAllActiveUserFileVersions(userId);
 
                 var resp = new SyncAllResponse { 
                     CurrentFileVersionsInfos = infoDtos 
@@ -67,7 +67,7 @@ namespace CloudDrive.WebAPI.Controllers
                 return NotFound();
             }
 
-            var fileVersionInfo = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId);
             if (fileVersionInfo != null)
             {
                 var resp = new SyncFileResponse 

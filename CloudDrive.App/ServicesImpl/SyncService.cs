@@ -60,7 +60,7 @@ namespace CloudDrive.App.ServicesImpl
                 foreach (var fsPath in foldersToDownload)
                 {
                     Guid fileId = _fileVersionState[fsPath].FileId;
-                    syncTasks.Add(DownloadLatestFolderFromRemoteAsync(fileId, fsPath));
+                    syncTasks.Add(DownloadActiveFolderFromRemoteAsync(fileId, fsPath));
                 }
 
                 var foldersToUpload = localFolders.Except(syncedFolders);
@@ -86,7 +86,7 @@ namespace CloudDrive.App.ServicesImpl
                 foreach (var fsPath in filesToDownload)
                 {
                     Guid fileId = _fileVersionState[fsPath].FileId;
-                    syncTasks.Add(DownloadLatestFileFromRemoteAsync(fileId, fsPath));
+                    syncTasks.Add(DownloadActiveFileFromRemoteAsync(fileId, fsPath));
                 }
 
                 var filesToUpload = localFiles.Except(syncedFiles);
@@ -198,7 +198,7 @@ namespace CloudDrive.App.ServicesImpl
 
         //Foldery
 
-        private async Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
+        private async Task DownloadActiveFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
         {
             var bench = _benchmarkService.StartBenchmark("Pobieranie folderu", path.Relative);
 
@@ -415,13 +415,13 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        private async Task DownloadLatestFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
+        private async Task DownloadActiveFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
         {
             var bench = _benchmarkService.StartBenchmark("Pobieranie pliku", path.Relative);
 
             try
             {
-                var fileResponse = await Api.GetLatestFileVersionAsync(fileId);
+                var fileResponse = await Api.GetActiveFileVersionAsync(fileId);
 
                 Directory.CreateDirectory(path.FullParentDir);
 

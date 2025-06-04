@@ -16,7 +16,7 @@ namespace CloudDrive.Infrastructure.Services
         }
 
 
-        public async Task<FileDTO> CreateInfoForNewFile(Guid fileId, Guid userId, bool isDir)
+        public async Task<FileDTO> CreateInfoForNewFile(Guid fileId, Guid userId, bool isDir, Guid firstFileVersionId)
         {
             var fileInfo = new Entities.File
             {
@@ -24,6 +24,7 @@ namespace CloudDrive.Infrastructure.Services
                 UserId = userId,
                 IsDir = isDir,
                 Deleted = false,
+                ActiveFileVersionId = firstFileVersionId,
                 CreatedDate = DateTime.Now.ToUniversalTime(),
                 ModifiedDate = null
             };
@@ -46,12 +47,13 @@ namespace CloudDrive.Infrastructure.Services
             return info?.UserId == userId;
         }
 
-        public async Task<FileDTO> UpdateInfoForFile(Guid fileId, bool? deleted)
+        public async Task<FileDTO> UpdateInfoForFile(Guid fileId, bool? deleted, Guid? activeFileVersionId)
         {
             //TODO add custom standard exception types
             var tracked = await dbContext.Files.FindAsync(fileId) ?? throw new Exception("File not found");
 
             tracked.Deleted = deleted ?? tracked.Deleted;
+            tracked.ActiveFileVersionId = activeFileVersionId ?? tracked.ActiveFileVersionId;
             tracked.ModifiedDate = DateTime.Now.ToUniversalTime();
             await dbContext.SaveChangesAsync();
 
