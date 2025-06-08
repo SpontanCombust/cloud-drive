@@ -109,6 +109,16 @@ namespace CloudDrive.Infrastructure.Services
             return infos.Select(i => i.ToDto()).ToArray();
         }
 
+        public async Task<FileVersionDTO[]> GetInfoForUserFileVersions(Guid userId, Guid fileId)
+        {
+            var fvs = await dbContext.FileVersions
+                .Include(fv => fv.File)
+                .Where(fv => fv.FileId == fileId && fv.File.UserId == userId)
+                .ToArrayAsync();
+
+            return fvs.Select(fv => fv.ToDto()).ToArray();
+        }
+
         public async Task<FileVersionDTO?> GetInfoForActiveFileVersion(Guid fileId)
         {
             var fileInfo = await dbContext.Files.FindAsync(fileId);
@@ -136,6 +146,40 @@ namespace CloudDrive.Infrastructure.Services
             var fvs = await q.ToArrayAsync();
 
             return fvs.Select(fv => fv.ToDto()).ToArray();
+        }
+
+        public async Task<FileVersionExtDTO[]> GetInfoForAllActiveUserFileVersionsExt(Guid userId, bool includeDeleted)
+        {
+            var activeUserFiles = dbContext.Files
+                .Where(f => f.UserId == userId && (includeDeleted || !f.Deleted));
+
+            var q = from file in dbContext.Files
+                    join fileVersion in dbContext.FileVersions
+                    on file.ActiveFileVersionId equals fileVersion.FileVersionId
+                    where file.UserId == userId && (includeDeleted || !file.Deleted)
+                    select new { F = file, Fv = fileVersion };
+
+            var qr = await q.ToArrayAsync();
+
+            var dtos = qr.Select(x => new FileVersionExtDTO
+            {
+                FileId = x.F.FileId,
+                UserId = x.F.UserId,
+                IsDir = x.F.IsDir,
+                Deleted = x.F.Deleted,
+                FileCreatedDate = x.F.CreatedDate,
+                FileModifiedDate = x.F.ModifiedDate,
+
+                FileVersionId = x.Fv.FileVersionId,
+                ClientDirPath = x.Fv.ClientDirPath,
+                ClientFileName = x.Fv.ClientFileName,
+                VersionNr = x.Fv.VersionNr,
+                Md5 = x.Fv.Md5,
+                SizeBytes = x.Fv.SizeBytes,
+                FileVersionCreatedDate = x.Fv.CreatedDate
+            });
+
+            return dtos.ToArray();
         }
 
         public async Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
