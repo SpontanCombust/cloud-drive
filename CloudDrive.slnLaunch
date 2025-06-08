@@ -4,11 +4,11 @@
     "Projects": [
       {
         "Path": "CloudDrive.WebAPI\\CloudDrive.WebAPI.csproj",
-        "Action": "Start"
+        "Action": "StartWithoutDebugging"
       },
       {
         "Path": "CloudDrive.App\\CloudDrive.App.csproj",
-        "Action": "Start"
+        "Action": "StartWithoutDebugging"
       }
     ]
   }
