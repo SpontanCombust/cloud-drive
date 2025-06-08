@@ -30,10 +30,10 @@ namespace CloudDrive.App.Views
         private readonly IBenchmarkService _benchmarkService;
 
         public StatusPage(
-            ILogRelayService logRelay, 
-            ILogHistoryService logHistory, 
-            ISyncService syncService, 
-            IViewLocator viewLocator, 
+            ILogRelayService logRelay,
+            ILogHistoryService logHistory,
+            ISyncService syncService,
+            IViewLocator viewLocator,
             IFileSystemWatcher fileSystemWatcher,
             IBenchmarkService benchmarkService)
         {
@@ -47,7 +47,8 @@ namespace CloudDrive.App.Views
             InitializeComponent();
 
             logRelay.LogAdded += onLogAdded;
-            foreach(var e in logHistory.GetHistory() ) {
+            foreach (var e in logHistory.GetHistory())
+            {
                 LogTextBox.Text += e.Message + Environment.NewLine;
             }
 
@@ -90,7 +91,8 @@ namespace CloudDrive.App.Views
             {
                 _syncService.SynchronizeAllFilesAsync();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 MessageBox.Show("Błąd w synchronizacji: " + ex.Message);
             }
         }
@@ -132,6 +134,12 @@ namespace CloudDrive.App.Views
             {
                 MessageBox.Show("Błąd otwarcia pliku: " + ex.Message);
             }
+        }
+
+        private void FileVersionHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            var fileHistoryWindow = _viewLocator.FileHistoryWindow();
+            fileHistoryWindow.Show();
         }
     }
 }

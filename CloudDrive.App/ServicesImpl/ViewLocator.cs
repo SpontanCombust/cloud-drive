@@ -1,6 +1,7 @@
 ﻿using CloudDrive.App.Factories;
 using CloudDrive.App.Services;
 using CloudDrive.App.Views;
+using CloudDrive.App.Views.FileHistory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CloudDrive.App.ServicesImpl
@@ -36,6 +37,12 @@ namespace CloudDrive.App.ServicesImpl
             var fileSystemWatcher = _serviceProvider.GetRequiredService<IFileSystemWatcher>();
             var benchmarkService = _serviceProvider.GetRequiredService<IBenchmarkService>();
             return new StatusPage(logRelayService, logHistoryService, syncService, this, fileSystemWatcher, benchmarkService);
+        }
+
+
+        public FileHistoryWindow FileHistoryWindow()
+        {
+            return _serviceProvider.GetRequiredService<FileHistoryWindow>();
         }
     }
 }

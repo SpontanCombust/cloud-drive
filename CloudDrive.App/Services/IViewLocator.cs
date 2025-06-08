@@ -1,4 +1,5 @@
 ﻿using CloudDrive.App.Views;
+using CloudDrive.App.Views.FileHistory;
 
 namespace CloudDrive.App.Services
 {
@@ -7,5 +8,6 @@ namespace CloudDrive.App.Services
         LoginPage LoginPage();
         SettingsPage SettingsPage();
         StatusPage StatusPage();
+        FileHistoryWindow FileHistoryWindow();
     }
 }

@@ -8,6 +8,7 @@ using CloudDrive.App.ServicesImpl;
 using CloudDrive.App.Factories;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
+using CloudDrive.App.Views.FileHistory;
 
 namespace CloudDrive.App
 {
@@ -29,7 +30,10 @@ namespace CloudDrive.App
             var logRelay = new LogRelayService();
 
             services
+                // windows and views
                 .AddSingleton<MainWindow>()
+                .AddTransient<FileHistoryWindow>()
+                // services
                 .AddSingleton<IUserSettingsService, AppDataUserSettingsService>()
                 .AddSingleton<IViewLocator, ViewLocator>()
                 .AddSingleton<IAccessTokenHolder, WebAPIAccessTokenHolder>()
@@ -45,6 +49,7 @@ namespace CloudDrive.App
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
                 .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()
                 .AddSingleton<IBenchmarkService, BenchmarkService>()
+                // logging
                 .AddLogging(builder =>
                 {
                     //builder.ClearProviders();
