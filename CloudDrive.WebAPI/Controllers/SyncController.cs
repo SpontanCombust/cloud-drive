@@ -22,7 +22,7 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
 
-        //TODO add query params to search through deleted as well
+        //TODO migrate to using only SyncAllExt, remove this one and rename SyncAllExt to SyncAll
         /// <summary>
         /// Return the current server-side state of user's storage
         /// </summary>
@@ -40,6 +40,34 @@ namespace CloudDrive.WebAPI.Controllers
 
                 var resp = new SyncAllResponse { 
                     CurrentFileVersionsInfos = infoDtos 
+                };
+
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Return the current server-side state of user's storage but with extra information about files
+        /// </summary>
+        [HttpGet("ext", Name = "SyncAllExt")]
+        [Authorize]
+        [ProducesResponseType(typeof(SyncAllExtResponse), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<SyncAllExtResponse>> SyncAllExt([FromQuery] SyncAllExtRequestQuery q)
+        {
+            Guid userId = User.GetId();
+
+            try
+            {
+                var fvExtDtos = await fileVersionInfoService.GetInfoForAllActiveUserFileVersionsExt(userId, q.Deleted);
+
+                var resp = new SyncAllExtResponse
+                {
+                    CurrentFileVersionsInfosExt = fvExtDtos
                 };
 
                 return Ok(resp);

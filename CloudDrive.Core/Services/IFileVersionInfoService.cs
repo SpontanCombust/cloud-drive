@@ -21,7 +21,9 @@ namespace CloudDrive.Core.Services
         [Obsolete("Use GetInfoForAllActiveUserFileVersions instead")]
         Task<FileVersionDTO[]> GetInfoForAllLatestUserFileVersions(Guid userId);
         Task<FileVersionDTO?> GetInfoForActiveFileVersion(Guid fileId);
+        Task<FileVersionDTO[]> GetInfoForUserFileVersions(Guid userId, Guid fileId);
         Task<FileVersionDTO[]> GetInfoForAllActiveUserFileVersions(Guid userId);
+        Task<FileVersionExtDTO[]> GetInfoForAllActiveUserFileVersionsExt(Guid userId, bool includeDeleted);
         /// <summary>
         /// Find if for a user there ever was a file version with these exact same content characteristics
         /// </summary>
