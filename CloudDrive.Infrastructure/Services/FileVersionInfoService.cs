@@ -61,6 +61,34 @@ namespace CloudDrive.Infrastructure.Services
             return info?.ToDto();
         }
 
+        public async Task<FileVersionDTO?> GetInfoForUserFileVersion(Guid userId, Guid fileVersionId)
+        {
+            var info = await dbContext.FileVersions
+                .Include(fv => fv.File)
+                .Where(fv => fv.FileVersionId == fileVersionId && fv.File.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            return info?.ToDto();
+        }
+
+        public async Task<FileVersionExtDTO?> GetInfoForUserFileVersionExt(Guid userId, Guid fileVersionId)
+        {
+            var q = from fv in dbContext.FileVersions
+                    join f in dbContext.Files on fv.FileId equals f.FileId
+                    where fv.FileVersionId == fileVersionId && f.UserId == userId
+                    select new { f, fv };
+
+            var qr = await q.FirstOrDefaultAsync();
+            if (qr == null)
+            {
+                return null;
+            }
+
+            var fvext = new FileVersionExtDTO(qr.f.ToDto(), qr.fv.ToDto());
+
+            return fvext;
+        }
+
         public async Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr)
         {
             var info = await dbContext.FileVersions
@@ -161,23 +189,7 @@ namespace CloudDrive.Infrastructure.Services
 
             var qr = await q.ToArrayAsync();
 
-            var dtos = qr.Select(x => new FileVersionExtDTO
-            {
-                FileId = x.F.FileId,
-                UserId = x.F.UserId,
-                IsDir = x.F.IsDir,
-                Deleted = x.F.Deleted,
-                FileCreatedDate = x.F.CreatedDate,
-                FileModifiedDate = x.F.ModifiedDate,
-
-                FileVersionId = x.Fv.FileVersionId,
-                ClientDirPath = x.Fv.ClientDirPath,
-                ClientFileName = x.Fv.ClientFileName,
-                VersionNr = x.Fv.VersionNr,
-                Md5 = x.Fv.Md5,
-                SizeBytes = x.Fv.SizeBytes,
-                FileVersionCreatedDate = x.Fv.CreatedDate
-            });
+            var dtos = qr.Select(x => new FileVersionExtDTO(x.F.ToDto(), x.Fv.ToDto()));
 
             return dtos.ToArray();
         }
