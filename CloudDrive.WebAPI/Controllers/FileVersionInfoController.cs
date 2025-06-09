@@ -1,4 +1,5 @@
-﻿using CloudDrive.Core.Services;
+﻿using CloudDrive.Core.DTO;
+using CloudDrive.Core.Services;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +22,7 @@ namespace CloudDrive.WebAPI.Controllers
 
         [HttpGet(Name = "GetFileVersionInfosForFile")]
         [ProducesResponseType(typeof(GetFileVersionInfosResponse), StatusCodes.Status200OK)]
-        public async Task<ActionResult<GetFileVersionInfosResponse>> Get([FromRoute] Guid fileId)
+        public async Task<ActionResult<GetFileVersionInfosResponse>> GetForFile([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();
 
@@ -35,6 +36,50 @@ namespace CloudDrive.WebAPI.Controllers
                 };
 
                 return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("{fileVersionId}", Name = "GetFileVersionInfo")]
+        [ProducesResponseType(typeof(FileVersionDTO), StatusCodes.Status200OK)]
+        public async Task<ActionResult<FileVersionDTO>> Get([FromRoute] Guid fileVersionId)
+        {
+            Guid userId = User.GetId();
+
+            try
+            {
+                var fv = await fileVersionInfoService.GetInfoForUserFileVersion(userId, fileVersionId);
+                if (fv == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(fv);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("{fileVersionId}/ext", Name = "GetFileVersionInfoExt")]
+        [ProducesResponseType(typeof(FileVersionExtDTO), StatusCodes.Status200OK)]
+        public async Task<ActionResult<FileVersionExtDTO>> GetExt([FromRoute] Guid fileVersionId)
+        {
+            Guid userId = User.GetId();
+
+            try
+            {
+                var fvext = await fileVersionInfoService.GetInfoForUserFileVersionExt(userId, fileVersionId);
+                if (fvext == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(fvext);
             }
             catch (Exception ex)
             {

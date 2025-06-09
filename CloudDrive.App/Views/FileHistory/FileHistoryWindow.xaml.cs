@@ -1,19 +1,14 @@
 ﻿using CloudDrive.App.Factories;
 using CloudDrive.App.Services;
+using CloudDrive.App.Utils;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace CloudDrive.App.Views.FileHistory
 {
@@ -25,17 +20,108 @@ namespace CloudDrive.App.Views.FileHistory
         private readonly WebAPIClientFactory _apiFactory;
         private readonly ILogger<FileHistoryWindow> _logger;
 
-        public FileIndexTreeViewModel ViewModel { get; } = new();
-        
-        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger, IUserSettingsService userSettings)
+
+        //public event PropertyChangedEventHandler? PropertyChanged;
+
+        public FileIndexTreeViewModel TreeViewModel { get; }
+
+        public ObservableCollection<FileVersionListItemViewModel> FileVersions { get; } = new();
+
+        private FileVersionListItemViewModel? _selectedFileVersion;
+        public FileVersionListItemViewModel? SelectedFileVersion
+        {
+            get => _selectedFileVersion;
+            set
+            {
+                if (_selectedFileVersion != value)
+                {
+                    _selectedFileVersion = value;
+                    //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedFileVersion)));
+                }
+            }
+        }
+
+
+        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger)
         {
             _apiFactory = apiFactory;
             _logger = logger;
 
             InitializeComponent();
-            FileIndexTreeView.DataContext = ViewModel;
+
+            TreeViewModel = new FileIndexTreeViewModel();
+            SelectedFileVersion = null;
+
+            DataContext = this;
+            FileIndexTreeView.DataContext = TreeViewModel;
+
+            FileIndexTreeView.SelectedItemChanged += OnSelectedTreeItemChanged;
 
             Task.Run(FillFileIndexTree).Wait();
+        }
+
+
+        private async void OnSelectedTreeItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is FileIndexTreeItemViewModel treeItem && treeItem.IsValid)
+            {
+                await LoadFileVersions(treeItem.FileId);
+            }
+            else
+            {
+                FileVersions.Clear();
+            }
+        }
+
+        private async Task LoadFileVersions(Guid fileId)
+        {
+            try
+            {
+                FileVersions.Clear();
+                var api = _apiFactory.Create();
+                var versions = await api.GetFileVersionInfosForFileAsync(fileId);
+
+                foreach (var version in versions.FileVersionsInfos)
+                {
+                    FileVersions.InsertSorted(new FileVersionListItemViewModel
+                    {
+                        FileVersionId = version.FileVersionId,
+                        ClientPath = Path.Combine(version.ClientDirPath ?? "", version.ClientFileName),
+                        VersionNr = version.VersionNr,
+                        Md5 = version.Md5,
+                        SizeBytes = version.SizeBytes,
+                        CreatedDate = version.CreatedDate.DateTime
+                    }, (x, y) => y.VersionNr - x.VersionNr);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Błąd pobierania informacji o wersjach pliku: {}", ex.Message);
+                MessageBox.Show($"Błąd pobierania informacji o wersjach pliku: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void OnApplyVersionClick(object sender, RoutedEventArgs e)
+        {
+            if (SelectedFileVersion == null) return;
+
+            try
+            {
+                var api = _apiFactory.Create();
+                // TODO: Call API to apply selected version
+                // TODO: download that version through SyncService
+                await Task.CompletedTask; // Placeholder until API method is available
+
+                MessageBox.Show($"Przywrócono wersję {SelectedFileVersion.VersionNr}!", "Success",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Błąd przywracania wersji: {}", ex.Message);
+                MessageBox.Show($"Błąd przywracania wersji: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task FillFileIndexTree()
@@ -51,18 +137,14 @@ namespace CloudDrive.App.Views.FileHistory
                 {
                     var clientFilePath = Path.Combine(fv.ClientDirPath ?? string.Empty, fv.ClientFileName) ?? string.Empty;
                     var treeItem = new FileIndexTreeItemViewModel(clientFilePath, fv.Deleted, fv.FileId);
-                    ViewModel.InsertIndex(treeItem);
+                    TreeViewModel.InsertIndex(treeItem);
                 }
-
-                if (ViewModel.Active.Count == 0)
-                {
-                    
-                }
-            } 
+            }
             catch (Exception ex)
             {
                 _logger.LogError("Błąd pobrania historii plików: {}", ex.Message);
-                return;
+                MessageBox.Show($"Błąd pobrania historii plików: {ex.Message}", "Błąd",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

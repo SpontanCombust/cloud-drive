@@ -8,9 +8,9 @@
         Title="CloudDrive - historia plików" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="60*"/>
+            <ColumnDefinition Width="40*"/>
             <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="35*"/>
+            <ColumnDefinition Width="55*"/>
         </Grid.ColumnDefinitions>
 
         <!-- File Tree View -->
@@ -48,6 +48,65 @@
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
 
         <!-- File Versions List -->
-        <ListView x:Name="FileVersionListView" Grid.Column="2"/>
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <ListView x:Name="FileVersionListView" 
+                      Grid.Row="0"
+                      ItemsSource="{Binding FileVersions}"
+                      SelectedItem="{Binding SelectedFileVersion}">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Wersja" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding VersionNr}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Ścieżka" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ClientPath}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Rozmiar (B)" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding SizeBytes}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Data utworzenia" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CreatedDate}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="MD5" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Md5}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <Button Grid.Row="1" 
+                    Content="Przywróć wersję" 
+                    Click="OnApplyVersionClick"
+                    
+                    Margin="10"
+                    Padding="20,5"
+                    HorizontalAlignment="Right"/>
+        </Grid>
+        
     </Grid>
 </Window>

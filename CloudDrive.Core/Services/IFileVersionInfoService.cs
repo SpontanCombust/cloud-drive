@@ -15,6 +15,8 @@ namespace CloudDrive.Core.Services
             long? fileSize
         );
         Task<FileVersionDTO?> GetInfoForFileVersion(Guid fileVersionId);
+        Task<FileVersionDTO?> GetInfoForUserFileVersion(Guid userId, Guid fileVersionId);
+        Task<FileVersionExtDTO?> GetInfoForUserFileVersionExt(Guid userId, Guid fileVersionId);
         Task<FileVersionDTO?> GetInfoForFileVersionByVersionNr(Guid fileId, int versionNr);
         [Obsolete("Use GetInfoForActiveFileVersion instead")]
         Task<FileVersionDTO?> GetInfoForLatestFileVersion(Guid fileId);
