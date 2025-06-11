@@ -1,7 +1,9 @@
 ﻿using CloudDrive.App.Factories;
+using CloudDrive.App.Model;
 using CloudDrive.App.Services;
 using CloudDrive.App.Utils;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,61 +17,72 @@ namespace CloudDrive.App.Views.FileHistory
     /// <summary>
     /// Interaction logic for FileHistoryWindow.xaml
     /// </summary>
-    public partial class FileHistoryWindow : Window
+    public partial class FileHistoryWindow : Window, INotifyPropertyChanged
     {
         private readonly WebAPIClientFactory _apiFactory;
         private readonly ILogger<FileHistoryWindow> _logger;
+        private readonly ISyncService _syncService;
 
-
-        //public event PropertyChangedEventHandler? PropertyChanged;
 
         public FileIndexTreeViewModel TreeViewModel { get; }
 
-        public ObservableCollection<FileVersionListItemViewModel> FileVersions { get; } = new();
+        public FileIndexTreeItemViewModel? SelectedFileItem { get; set; }
 
-        private FileVersionListItemViewModel? _selectedFileVersion;
-        public FileVersionListItemViewModel? SelectedFileVersion
+
+        public ObservableCollection<FileVersionListItemViewModel> FileVersionItems { get; } = new();
+
+        private FileVersionListItemViewModel? _selectedFileVersionItem;
+        public FileVersionListItemViewModel? SelectedFileVersionItem
         {
-            get => _selectedFileVersion;
+            get => _selectedFileVersionItem;
             set
             {
-                if (_selectedFileVersion != value)
+                if (_selectedFileVersionItem != value)
                 {
-                    _selectedFileVersion = value;
-                    //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedFileVersion)));
+                    _selectedFileVersionItem = value;
+                    OnPropertyChanged(nameof(SelectedFileVersionItem));
+                    OnPropertyChanged(nameof(IsRestorableFileVersionItemSelected));
                 }
             }
         }
 
+        public bool IsRestorableFileVersionItemSelected
+        {
+            get => _selectedFileVersionItem != null 
+                && ((SelectedFileItem?.Deleted ?? false) || !_selectedFileVersionItem.Active);
+        }
 
-        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger)
+
+        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger, ISyncService syncService)
         {
             _apiFactory = apiFactory;
             _logger = logger;
+            _syncService = syncService;
 
             InitializeComponent();
 
             TreeViewModel = new FileIndexTreeViewModel();
-            SelectedFileVersion = null;
+            SelectedFileItem = null;
+            SelectedFileVersionItem = null;
 
             DataContext = this;
             FileIndexTreeView.DataContext = TreeViewModel;
 
-            FileIndexTreeView.SelectedItemChanged += OnSelectedTreeItemChanged;
-
             Task.Run(FillFileIndexTree).Wait();
         }
 
-
-        private async void OnSelectedTreeItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private async void FileIndexTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (e.NewValue is FileIndexTreeItemViewModel treeItem && treeItem.IsValid)
             {
+                SelectedFileItem = treeItem;
                 await LoadFileVersions(treeItem.FileId);
             }
             else
             {
-                FileVersions.Clear();
+                SelectedFileItem = null;
+                SelectedFileVersionItem = null;
+                FileVersionItems.Clear();
             }
         }
 
@@ -77,20 +90,24 @@ namespace CloudDrive.App.Views.FileHistory
         {
             try
             {
-                FileVersions.Clear();
-                var api = _apiFactory.Create();
-                var versions = await api.GetFileVersionInfosForFileAsync(fileId);
+                FileVersionItems.Clear();
 
-                foreach (var version in versions.FileVersionsInfos)
+                var api = _apiFactory.Create();
+
+                var fileInfo = await api.GetFileInfoAsync(fileId);
+                var versionsInfo = await api.GetFileVersionInfosForFileAsync(fileId);
+
+                foreach (var version in versionsInfo.FileVersionsInfos)
                 {
-                    FileVersions.InsertSorted(new FileVersionListItemViewModel
+                    FileVersionItems.InsertSorted(new FileVersionListItemViewModel
                     {
                         FileVersionId = version.FileVersionId,
                         ClientPath = Path.Combine(version.ClientDirPath ?? "", version.ClientFileName),
                         VersionNr = version.VersionNr,
                         Md5 = version.Md5,
                         SizeBytes = version.SizeBytes,
-                        CreatedDate = version.CreatedDate.DateTime
+                        CreatedDate = version.CreatedDate.DateTime,
+                        Active = fileInfo.ActiveFileVersionId == version.FileVersionId,
                     }, (x, y) => y.VersionNr - x.VersionNr);
                 }
             }
@@ -104,17 +121,33 @@ namespace CloudDrive.App.Views.FileHistory
 
         private async void OnApplyVersionClick(object sender, RoutedEventArgs e)
         {
-            if (SelectedFileVersion == null) return;
+            if (SelectedFileItem == null || SelectedFileVersionItem == null) 
+                return;
 
             try
             {
-                var api = _apiFactory.Create();
-                // TODO: Call API to apply selected version
-                // TODO: download that version through SyncService
-                await Task.CompletedTask; // Placeholder until API method is available
+                if (SelectedFileItem.IsDir)
+                {
+                    await _syncService.RestoreFolderFromRemoteAsync(SelectedFileItem.FileId, SelectedFileVersionItem.FileVersionId);
+                }
+                else
+                {
+                    await _syncService.RestoreFileFromRemoteAsync(SelectedFileItem.FileId, SelectedFileVersionItem.FileVersionId);
+                }
 
-                MessageBox.Show($"Przywrócono wersję {SelectedFileVersion.VersionNr}!", "Success",
+                MessageBox.Show($"Przywrócono wersję {SelectedFileVersionItem.VersionNr}!", "Success",
                     MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // if the item was deleted reload the whole view...
+                if (SelectedFileItem.Deleted)
+                {
+                    await FillFileIndexTree();
+                }
+                // ...if not just reload versions for the selected file
+                else
+                {
+                    await LoadFileVersions(SelectedFileItem.FileId);
+                }
             }
             catch (Exception ex)
             {
@@ -128,7 +161,10 @@ namespace CloudDrive.App.Views.FileHistory
         {
             try
             {
+                TreeViewModel.Clear();
+
                 var api = _apiFactory.Create();
+                //FIXME should rather make use of the index stored in SyncService
                 SyncAllExtResponse resp = await api.SyncAllExtAsync(true);
 
                 var fvs = resp.CurrentFileVersionsInfosExt;
@@ -136,7 +172,7 @@ namespace CloudDrive.App.Views.FileHistory
                 foreach (var fv in fvs)
                 {
                     var clientFilePath = Path.Combine(fv.ClientDirPath ?? string.Empty, fv.ClientFileName) ?? string.Empty;
-                    var treeItem = new FileIndexTreeItemViewModel(clientFilePath, fv.Deleted, fv.FileId);
+                    var treeItem = new FileIndexTreeItemViewModel(clientFilePath, fv.IsDir, fv.Deleted, fv.FileId);
                     TreeViewModel.InsertIndex(treeItem);
                 }
             }
@@ -146,6 +182,15 @@ namespace CloudDrive.App.Views.FileHistory
                 MessageBox.Show($"Błąd pobrania historii plików: {ex.Message}", "Błąd",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

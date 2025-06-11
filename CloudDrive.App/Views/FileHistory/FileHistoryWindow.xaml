@@ -5,16 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CloudDrive.App.Views.FileHistory"
         mc:Ignorable="d"
-        Title="CloudDrive - historia plików" Height="450" Width="800">
+        Title="CloudDrive - historia plików" Height="500" Width="1000">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="40*"/>
+            <ColumnDefinition Width="30*"/>
             <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="55*"/>
+            <ColumnDefinition Width="69*"/>
         </Grid.ColumnDefinitions>
 
         <!-- File Tree View -->
-        <TreeView x:Name="FileIndexTreeView" Grid.Column="0">
+        <TreeView x:Name="FileIndexTreeView" 
+                  Grid.Column="0" 
+                  SelectedItemChanged="FileIndexTreeView_SelectedItemChanged">
             <TreeView.Resources>
                 <!-- Template for all file items -->
                 <HierarchicalDataTemplate DataType="{x:Type local:FileIndexTreeItemViewModel}" 
@@ -56,8 +58,17 @@
             
             <ListView x:Name="FileVersionListView" 
                       Grid.Row="0"
-                      ItemsSource="{Binding FileVersions}"
-                      SelectedItem="{Binding SelectedFileVersion}">
+                      ItemsSource="{Binding FileVersionItems}"
+                      SelectedItem="{Binding SelectedFileVersionItem}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Active}" Value="True">
+                                <Setter Property="Background" Value="#E8F5E9"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Wersja" Width="60">
@@ -102,7 +113,7 @@
             <Button Grid.Row="1" 
                     Content="Przywróć wersję" 
                     Click="OnApplyVersionClick"
-                    
+                    IsEnabled="{Binding IsRestorableFileVersionItemSelected}"
                     Margin="10"
                     Padding="20,5"
                     HorizontalAlignment="Right"/>
