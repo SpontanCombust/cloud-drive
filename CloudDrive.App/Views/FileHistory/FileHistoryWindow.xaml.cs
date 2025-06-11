@@ -22,6 +22,7 @@ namespace CloudDrive.App.Views.FileHistory
         private readonly WebAPIClientFactory _apiFactory;
         private readonly ILogger<FileHistoryWindow> _logger;
         private readonly ISyncService _syncService;
+        private readonly IFileSystemWatcher _fsWatcher;
 
 
         public FileIndexTreeViewModel TreeViewModel { get; }
@@ -53,11 +54,12 @@ namespace CloudDrive.App.Views.FileHistory
         }
 
 
-        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger, ISyncService syncService)
+        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger, ISyncService syncService, IFileSystemWatcher fsWatcher)
         {
             _apiFactory = apiFactory;
             _logger = logger;
             _syncService = syncService;
+            _fsWatcher = fsWatcher;
 
             InitializeComponent();
 
@@ -126,6 +128,11 @@ namespace CloudDrive.App.Views.FileHistory
 
             try
             {
+                // W czasie wykonywania operacji przywracania plików programatycznie zmieniany jest stan systemu plików, np. pobierane i zapisywane są pliki.
+                // Zmiana tego stanu może zostać wykryta przez FileSystemWatcher, a w efekcie wykonanie niepotrzebnych operacji na plikach,
+                // nad którymi program w tym momencie pracuje. Dlatego też należy wyłączyć FileSystemWatchera na okres przywracania wersji plików.
+                _fsWatcher.Stop();
+
                 if (SelectedFileItem.IsDir)
                 {
                     await _syncService.RestoreFolderFromRemoteAsync(SelectedFileItem.FileId, SelectedFileVersionItem.FileVersionId);
@@ -154,6 +161,10 @@ namespace CloudDrive.App.Views.FileHistory
                 _logger.LogError("Błąd przywracania wersji: {}", ex.Message);
                 MessageBox.Show($"Błąd przywracania wersji: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _fsWatcher.Start();
             }
         }
 
