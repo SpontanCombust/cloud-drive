@@ -1,4 +1,5 @@
-﻿using CloudDrive.Core.Services;
+﻿using CloudDrive.Core.DTO;
+using CloudDrive.Core.Services;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -94,6 +95,48 @@ namespace CloudDrive.WebAPI.Controllers
             {
                 await fileManagerService.DeleteDirectory(fileId);
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("{fileId}/restore", Name = "RestoreDirectory")]
+        [ProducesResponseType(typeof(RestoreDirectoryResponse), StatusCodes.Status200OK)]
+        public async Task<ActionResult<RestoreDirectoryResponse>> Restore([FromRoute] Guid fileId, [FromQuery] RestoreDirectoryRequestQuery req)
+        {
+            if (req.RestoreSubfiles)
+            {
+                return StatusCode(StatusCodes.Status501NotImplemented, "Restoring subfiles is not supported");
+            }
+
+            Guid userId = User.GetId();
+
+            if (!await fileInfoService.FileBelongsToUser(fileId, userId))
+            {
+                return Unauthorized("You do not have permission to modify this directory.");
+            }
+
+            try
+            {
+                RestoreDirectoryResultDTO restoration;
+                if (req.FileVersionId != null)
+                {
+                    restoration = await fileManagerService.RestoreDirectory(fileId, req.FileVersionId.GetValueOrDefault());
+                }
+                else
+                {
+                    restoration = await fileManagerService.RestoreDirectory(fileId);
+                }
+
+                var resp = new RestoreDirectoryResponse
+                {
+                    FileInfo = restoration.FileInfo,
+                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo
+                };
+
+                return Ok(resp);
             }
             catch (Exception ex)
             {

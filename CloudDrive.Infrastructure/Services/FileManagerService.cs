@@ -241,9 +241,38 @@ namespace CloudDrive.Infrastructure.Services
             await fileInfoService.UpdateInfoForFile(fileId, deleted: true, activeFileVersionId: null);
         }
 
-        public async Task RestoreFile(Guid fileId)
+        public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
+
+            var result = new RestoreFileResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            return result;
+        }
+
+        public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId)
+        {
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
+
+            if (fileVersionInfo.FileId != fileId)
+            {
+                throw new Exception("File version does not belong to the specified file");
+            }
+
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+
+            var result = new RestoreFileResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            return result;
         }
 
 
@@ -327,11 +356,42 @@ namespace CloudDrive.Infrastructure.Services
             //FIXME dependant files not affected!
         }
 
-        public async Task RestoreDirectory(Guid fileId)
+        public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
 
-            //FIXME dependant files not affected!
+            var result = new RestoreDirectoryResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            //FIXME dependant files never taken into account!
+
+            return result;
+        }
+
+        public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId)
+        {
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
+
+            if (fileVersionInfo.FileId != fileId)
+            {
+                throw new Exception("File version does not belong to the specified file");
+            }
+
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+
+            var result = new RestoreDirectoryResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            //FIXME dependant files never taken into account!
+
+            return result;
         }
 
 

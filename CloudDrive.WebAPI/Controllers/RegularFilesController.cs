@@ -1,4 +1,6 @@
-﻿using CloudDrive.Core.Services;
+﻿using CloudDrive.Core.DTO;
+using CloudDrive.Core.Services;
+using CloudDrive.Infrastructure.Services;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -164,6 +166,43 @@ namespace CloudDrive.WebAPI.Controllers
             {
                 await fileManagerService.DeleteFile(fileId);
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("{fileId}/restore", Name = "RestoreFile")]
+        [ProducesResponseType(typeof(RestoreFileResponse), StatusCodes.Status200OK)]
+        public async Task<ActionResult<RestoreFileResponse>> Restore([FromRoute] Guid fileId, [FromQuery] RestoreFileRequestQuery q)
+        {
+            Guid userId = User.GetId();
+
+            if (!await fileInfoService.FileBelongsToUser(fileId, userId))
+            {
+                return Unauthorized("You do not have permission to modify this file.");
+            }
+
+            try
+            {
+                RestoreFileResultDTO restoration;
+                if (q.FileVersionId != null)
+                {
+                    restoration = await fileManagerService.RestoreFile(fileId, q.FileVersionId.GetValueOrDefault());
+                }
+                else
+                {
+                    restoration = await fileManagerService.RestoreFile(fileId);
+                }
+
+                var resp = new RestoreFileResponse
+                {
+                    FileInfo = restoration.FileInfo,
+                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo
+                };
+
+                return Ok(resp);
             }
             catch (Exception ex)
             {
