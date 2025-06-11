@@ -61,14 +61,23 @@ namespace CloudDrive.App.Views
             });
         }
 
-        private void FullSyncButton_Click(object sender, RoutedEventArgs e)
+        private async void FullSyncButton_Click(object sender, RoutedEventArgs e)
         {
+            FullSyncButton.IsEnabled = false;
+            LoadingSpinner.Visibility = Visibility.Visible;
+
             try
             {
-                _syncService.SynchronizeAllFilesAsync();
+                await _syncService.SynchronizeAllFilesAsync();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 MessageBox.Show("Błąd w synchronizacji: " + ex.Message);
+            }
+            finally
+            {
+                LoadingSpinner.Visibility = Visibility.Collapsed;
+                FullSyncButton.IsEnabled = true;
             }
         }
 

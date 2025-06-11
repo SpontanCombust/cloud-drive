@@ -40,8 +40,8 @@ namespace CloudDrive.App.Model
             if (!fullPath.StartsWith(watchedFolder))
                 throw new ArgumentException("fullPath must be a subpath of watchedFolder", fullPath);
 
-            Full = fullPath.TrimEnd(Path.PathSeparator);
-            WatchedFolder = watchedFolder.TrimEnd(Path.PathSeparator);
+            Full = Path.GetFullPath(fullPath).TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant();
+            WatchedFolder = Path.GetFullPath(watchedFolder).TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant();
             IsDirectory = isDirectory;
         }
 

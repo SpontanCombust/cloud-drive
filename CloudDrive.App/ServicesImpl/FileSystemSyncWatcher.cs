@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using CloudDrive.App.Model;
@@ -16,6 +17,9 @@ namespace CloudDrive.App.ServicesImpl
 
         private bool _disposed = false;
 
+        private readonly ConcurrentDictionary<string, bool> _pathTypeCache = new();
+        private readonly ConcurrentDictionary<string, DateTime> _lastSyncTime = new();
+        private readonly TimeSpan _syncThrottle = TimeSpan.FromSeconds(2);
         public FileSystemSyncWatcher(ISyncService syncService, IUserSettingsService settings, ILogger<FileSystemSyncWatcher> logger)
         {
             _syncService = syncService;
@@ -30,7 +34,7 @@ namespace CloudDrive.App.ServicesImpl
             _watcher = new FileSystemWatcher(_watchedFolder)
             {
                 IncludeSubdirectories = true,
-                EnableRaisingEvents = false, // Początkowo ustawiamy na false
+                EnableRaisingEvents = false,
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite
             };
 
@@ -58,7 +62,7 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy starcie nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy starcie nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
+                Console.WriteLine($"Błąd przy starcie nasłuchiwania folderu: {_watchedFolder}\n{ex}");
             }
         }
 
@@ -80,14 +84,28 @@ namespace CloudDrive.App.ServicesImpl
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Błąd przy próbie zakończenia nasłuchiwania folderu: {Folder}", _watchedFolder);
-                Console.WriteLine($"Błąd przy zakończeniu nasłuchiwania folderu: {_watchedFolder}. {ex.Message}");
+                _logger.LogError(ex, "Błąd przy zakończeniu nasłuchiwania folderu: {Folder}", _watchedFolder);
+                Console.WriteLine($"Błąd przy zakończeniu nasłuchiwania folderu: {_watchedFolder}\n{ex}");
             }
+        }
+
+        private bool ShouldSync(string path)
+        {
+            var now = DateTime.UtcNow;
+            if (_lastSyncTime.TryGetValue(path, out var lastTime))
+            {
+                if (now - lastTime < _syncThrottle)
+                    return false;
+            }
+
+            _lastSyncTime[path] = now;
+            return true;
         }
 
         public void OnCreated(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnCreated, {e.FullPath}");
+            if (!ShouldSync(e.FullPath)) return;
+
             Task.Run(async () =>
             {
                 try
@@ -96,30 +114,33 @@ namespace CloudDrive.App.ServicesImpl
                     bool isDir = Directory.Exists(e.FullPath);
                     var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
 
+                    _pathTypeCache[e.FullPath] = isDir;
+
                     if (isDir)
                     {
                         // nowy folder - synchronizuj go
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out _))
                         {
-                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
-                            _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
+                            await _syncService.UploadNewFolderRecursivelyAsync(path);
+                            _logger.LogInformation("Zaktualizowano folder rekurencyjnie na serwerze: {Path}", path.Full);
                         }
                         else
                         {
-                            await _syncService.UploadNewFolderToRemoteAsync(path);
-                            _logger.LogInformation("Dodano nowy folder na serwerze: {Path}", path.Full);
+                            await _syncService.UploadNewFolderRecursivelyAsync(path);
+                            _logger.LogInformation("Dodano nowy folder rekurencyjnie na serwerze: {Path}", path.Full);
                         }
                     }
                     else
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out _))
                         {
                             await _syncService.UploadModifiedFileToRemoteAsync(path);
-                            _logger.LogInformation("Dodano nowy plik na serwer: {Path}", path.Full);
+                            _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
                         }
                         else
                         {
                             await _syncService.UploadNewFileToRemoteAsync(path);
+                            _logger.LogInformation("Dodano nowy plik na serwerze: {Path}", path.Full);
                         }
                     }
                 }
@@ -131,13 +152,13 @@ namespace CloudDrive.App.ServicesImpl
         }
         public void OnDeleted(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnDelete, {e.FullPath}");
+            if (!ShouldSync(e.FullPath)) return;
             Task.Run(async () =>
             {
                 try
                 {
-                    bool wasDir = false;
-                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDirectory: false);
+                    bool wasDir = _pathTypeCache.TryGetValue(e.FullPath, out var isDir) && isDir;
+                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, wasDir);
 
                     if (wasDir)
                     {
@@ -149,26 +170,29 @@ namespace CloudDrive.App.ServicesImpl
                         await _syncService.RemoveFileFromRemoteAsync(path);
                         _logger.LogInformation("Usunięto plik na serwerze: {Path}", path.Full);
                     }
+
+                    _pathTypeCache.TryRemove(e.FullPath, out _);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "(Usuwanie) Błąd synchronizacji usunięcia: {Path}", e.FullPath);
+                    _logger.LogError(ex, "(Usuwanie) Błąd synchronizacji: {Path}", e.FullPath);
                 }
             });
         }
         public void OnChanged(object sender, FileSystemEventArgs e)
         {
-            Console.WriteLine($"Wydarzenie: OnChanged, {e.FullPath}");
+            if (!ShouldSync(e.FullPath)) return;
             Task.Run(async () =>
             {
                 try
                 {
                     bool isDir = Directory.Exists(e.FullPath);
+                    _pathTypeCache[e.FullPath] = isDir;
                     var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDir);
 
                     if (isDir)
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out _))
                         {
                             await _syncService.UploadModifiedFolderToRemoteAsync(path);
                             _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
@@ -176,7 +200,7 @@ namespace CloudDrive.App.ServicesImpl
                     }
                     else
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out _))
                         {
                             await _syncService.UploadModifiedFileToRemoteAsync(path);
                             _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
