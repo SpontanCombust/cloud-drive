@@ -8,7 +8,6 @@ namespace CloudDrive.App.Views.FileHistory
         public ObservableCollection<FileIndexTreeItemViewModel> Active { get; } = new();
         public ObservableCollection<FileIndexTreeItemViewModel> Archived { get; } = new();
 
-
         public void Clear()
         {
             Active.Clear();
@@ -19,50 +18,78 @@ namespace CloudDrive.App.Views.FileHistory
         {
             if (treeItem.Deleted)
             {
-                InsertArchivedIndex(treeItem);
+                InsertIndexIntoCollection(treeItem, Active);
             }
             else
             {
-                InsertActiveIndex(treeItem);
+                InsertIndexIntoCollection(treeItem, Archived);
             }
         }
 
 
-        private void InsertActiveIndex(FileIndexTreeItemViewModel treeItem)
+        private FileIndexTreeItemViewModel? FindItemByPath(string path, ObservableCollection<FileIndexTreeItemViewModel> items)
         {
-            bool inserted = false;
-            foreach (var item in Active)
+            foreach (var item in items)
             {
-                if (item.IsSubindex(treeItem))
+                if (string.Equals(item.FilePath, path, StringComparison.OrdinalIgnoreCase))
+                    return item;
+
+                var found = FindItemByPath(path, item.Subindices);
+                if (found != null)
+                    return found;
+            }
+            return null;
+        }
+
+        private void InsertIndexIntoCollection(FileIndexTreeItemViewModel treeItem, ObservableCollection<FileIndexTreeItemViewModel> collection)
+        {
+            // Check if item with this exact path already exists anywhere in the collection
+            var existingItem = FindItemByPath(treeItem.FilePath, collection);
+            if (existingItem != null)
+            {
+                // Update existing item's properties
+                existingItem.FileId = treeItem.FileId;
+                existingItem.IsDir = treeItem.IsDir;
+                existingItem.Deleted = treeItem.Deleted;
+                return;
+            }
+
+            // Try to find a parent directory that could contain this item
+            bool inserted = false;
+            foreach (var item in collection)
+            {
+                if (treeItem.IsSubindexOf(item))
                 {
-                    item.TryInsertSubindex(treeItem);
-                    inserted = true;
-                    break;
+                    inserted = item.TryInsertSubindex(treeItem);
+                    if (inserted) 
+                        break;
                 }
             }
 
             if (!inserted)
             {
-                Active.InsertSorted(treeItem, (x, y) => string.Compare(x.FileName, y.FileName, StringComparison.OrdinalIgnoreCase));
-            }
-        }
-
-        private void InsertArchivedIndex(FileIndexTreeItemViewModel treeItem)
-        {
-            bool inserted = false;
-            foreach (var item in Archived)
-            {
-                if (item.IsSubindex(treeItem))
+                if (treeItem.IsRootIndex())
                 {
-                    item.TryInsertSubindex(treeItem);
-                    inserted = true;
-                    break;
+                    collection.InsertSorted(treeItem, FileIndexTreeItemViewModel.FILE_NAME_COMPARISON);
                 }
-            }
-
-            if (!inserted)
-            {
-                Archived.InsertSorted(treeItem, (x, y) => string.Compare(x.FileName, y.FileName, StringComparison.OrdinalIgnoreCase));
+                else
+                {
+                    // Initialize directory structure for this item
+                    var rootIndex = treeItem.ExtractRootIndex();
+                    // Check if root directory already exists
+                    var existingRoot = collection.FirstOrDefault(x => 
+                        string.Equals(x.FilePath, rootIndex.FilePath, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (existingRoot != null)
+                    {
+                        existingRoot.TryInsertSubindex(treeItem);
+                    }
+                    else
+                    {
+                        rootIndex.TryInsertSubindex(treeItem);
+                        collection.InsertSorted(rootIndex, FileIndexTreeItemViewModel.FILE_NAME_COMPARISON);
+                    }
+                }
             }
         }
     }
