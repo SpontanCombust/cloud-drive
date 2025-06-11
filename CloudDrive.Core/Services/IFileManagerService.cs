@@ -11,11 +11,13 @@ namespace CloudDrive.Core.Services
         Task<GetFileResultDTO?> GetActiveFileVersion(Guid fileId);
         Task<FileVersionDTO> UpdateFile(Guid fileId, Stream fileStream, string clientFileName, string? clientDirPath);
         Task DeleteFile(Guid fileId);
-        Task RestoreFile(Guid fileId);
+        Task<RestoreFileResultDTO> RestoreFile(Guid fileId);
+        Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId);
 
         Task<CreateDirectoryResultDTO> CreateDirectory(Guid userId, string fileName, string? clientDirPath);
         Task<FileVersionDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath);
         Task DeleteDirectory(Guid fileId);
-        Task RestoreDirectory(Guid fileId);
+        Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId);
+        Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId);
     }
 }
