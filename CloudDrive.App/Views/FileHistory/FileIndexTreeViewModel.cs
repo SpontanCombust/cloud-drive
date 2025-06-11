@@ -9,6 +9,12 @@ namespace CloudDrive.App.Views.FileHistory
         public ObservableCollection<FileIndexTreeItemViewModel> Archived { get; } = new();
 
 
+        public void Clear()
+        {
+            Active.Clear();
+            Archived.Clear();
+        }
+
         public void InsertIndex(FileIndexTreeItemViewModel treeItem)
         {
             if (treeItem.Deleted)

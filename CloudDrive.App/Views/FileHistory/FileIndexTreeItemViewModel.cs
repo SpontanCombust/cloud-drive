@@ -12,20 +12,23 @@ namespace CloudDrive.App.Views.FileHistory
         /// </summary>
         public string FilePath { get; }
         public bool Deleted { get; }
+        public bool IsDir { get; }
         public ObservableCollection<FileIndexTreeItemViewModel> Subindices { get; } = new();
 
 
-        public FileIndexTreeItemViewModel(string filePath, bool deleted, Guid fileId)
+        public FileIndexTreeItemViewModel(string filePath, bool isDir, bool deleted, Guid fileId)
         {
             FileId = fileId;
             FilePath = filePath;
+            IsDir = isDir;
             Deleted = deleted;
         }
 
-        public FileIndexTreeItemViewModel(string filePath)
+        public FileIndexTreeItemViewModel(string filePath, bool isDir)
         {
             FileId = Guid.Empty;
             FilePath = filePath;
+            IsDir = isDir;
             Deleted = false;
         }
 
@@ -60,7 +63,7 @@ namespace CloudDrive.App.Views.FileHistory
 
             if (nextLevel == null)
             {
-                nextLevel = new FileIndexTreeItemViewModel(nextLevelPath);
+                nextLevel = new FileIndexTreeItemViewModel(nextLevelPath, true);
                 InsertDirectSubindex(nextLevel);
             }
 

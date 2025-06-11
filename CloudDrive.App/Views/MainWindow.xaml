@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CloudDrive.App.Views"
         mc:Ignorable="d"
-        Title="CloudeDrive" Height="600" Width="500">
+        Title="CloudeDrive" Height="650" Width="500">
     <Grid>
         <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
     </Grid>

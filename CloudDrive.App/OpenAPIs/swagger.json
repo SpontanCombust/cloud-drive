@@ -258,6 +258,103 @@
         }
       }
     },
+    "/files/dirs/{fileId}/restore": {
+      "post": {
+        "tags": [
+          "Directories"
+        ],
+        "operationId": "RestoreDirectory",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "FileVersionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RestoreSubfiles",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}": {
+      "get": {
+        "tags": [
+          "FileInfo"
+        ],
+        "operationId": "GetFileInfo",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/file-info/{fileId}/versions": {
       "get": {
         "tags": [
@@ -292,6 +389,104 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GetFileVersionInfosResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}/versions/{fileVersionId}": {
+      "get": {
+        "tags": [
+          "FileVersionInfo"
+        ],
+        "operationId": "GetFileVersionInfo",
+        "parameters": [
+          {
+            "name": "fileVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}/versions/{fileVersionId}/ext": {
+      "get": {
+        "tags": [
+          "FileVersionInfo"
+        ],
+        "operationId": "GetFileVersionInfoExt",
+        "parameters": [
+          {
+            "name": "fileVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
                 }
               }
             }
@@ -532,6 +727,55 @@
                 "schema": {
                   "type": "string",
                   "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/regular/{fileId}/restore": {
+      "post": {
+        "tags": [
+          "RegularFiles"
+        ],
+        "operationId": "RestoreFile",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "FileVersionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
                 }
               }
             }
@@ -845,6 +1089,30 @@
               "$ref": "#/components/schemas/FileVersionDTO"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreDirectoryResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "activeFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreFileResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "activeFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
           }
         },
         "additionalProperties": false

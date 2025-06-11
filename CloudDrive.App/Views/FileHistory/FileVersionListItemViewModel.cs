@@ -8,5 +8,6 @@
         public string? Md5 { get; set; }
         public long? SizeBytes { get; set; }
         public required DateTime CreatedDate { get; set; }
+        public required bool Active { get; set; }
     }
 }
