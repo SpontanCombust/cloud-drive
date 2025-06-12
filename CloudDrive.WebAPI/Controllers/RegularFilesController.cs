@@ -139,7 +139,8 @@ namespace CloudDrive.WebAPI.Controllers
 
                 var resp = new UpdateFileResponse
                 {
-                    NewFileVersionInfo = result
+                    NewFileVersionInfo = result.ActiveFileVersion,
+                    Changed = result.Changed,
                 };
 
                 return Ok(resp);

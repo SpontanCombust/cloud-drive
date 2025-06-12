@@ -1174,6 +1174,9 @@
         "properties": {
           "newFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "changed": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1183,6 +1186,9 @@
         "properties": {
           "newFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "changed": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

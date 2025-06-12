@@ -239,11 +239,18 @@ namespace CloudDrive.App.ServicesImpl
 
             try
             {
-                var resp = await Api.UpdateDirectoryAsync(version.FileId, parentDir, path.FileName);
+                var updateResp = await Api.UpdateDirectoryAsync(version.FileId, parentDir, path.FileName);
 
-                _fileVersionState[path] = resp.NewFileVersionInfo;
+                if (updateResp.Changed)
+                {
+                    _fileVersionState[path] = updateResp.NewFileVersionInfo;
 
-                _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
+                    _logger.LogInformation("Zaktualizowano folder na serwerze: {Path}", path.Full);
+                }
+                else
+                {
+                    _logger.LogDebug("Nie zaktualizowano folderu na serwerze, bo nie wykryto zmian: {Path}", path.Full);
+                }
             }
             catch (ApiException ex)
             {
@@ -577,11 +584,18 @@ namespace CloudDrive.App.ServicesImpl
                 using var fileStream = File.OpenRead(path.Full);
                 var fileParam = new FileParameter(fileStream, path.FileName, "application/octet-stream");
 
-                var updatedVersion = await Api.UpdateFileAsync(version.FileId, fileParam, path.RelativeParentDir);
+                var updateResp = await Api.UpdateFileAsync(version.FileId, fileParam, path.RelativeParentDir);
 
-                _fileVersionState[path] = updatedVersion.NewFileVersionInfo;
+                if (updateResp.Changed)
+                {
+                    _fileVersionState[path] = updateResp.NewFileVersionInfo;
 
-                _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
+                    _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
+                }
+                else
+                {
+                    _logger.LogDebug("Nie zaktualizowano pliku na serwerze, bo nie wykryto zmian: {Path}", path.Full);
+                }
             }
             catch (ApiException ex)
             {

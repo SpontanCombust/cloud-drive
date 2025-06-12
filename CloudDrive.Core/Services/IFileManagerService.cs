@@ -9,13 +9,13 @@ namespace CloudDrive.Core.Services
         [Obsolete("Use GetActiveFileVersion instead")]
         Task<GetFileResultDTO?> GetLatestFileVersion(Guid fileId);
         Task<GetFileResultDTO?> GetActiveFileVersion(Guid fileId);
-        Task<FileVersionDTO> UpdateFile(Guid fileId, Stream fileStream, string clientFileName, string? clientDirPath);
+        Task<UpdateFileResultDTO> UpdateFile(Guid fileId, Stream fileStream, string clientFileName, string? clientDirPath);
         Task DeleteFile(Guid fileId);
         Task<RestoreFileResultDTO> RestoreFile(Guid fileId);
         Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId);
 
         Task<CreateDirectoryResultDTO> CreateDirectory(Guid userId, string fileName, string? clientDirPath);
-        Task<FileVersionDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath);
+        Task<UpdateDirectoryResultDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath);
         Task DeleteDirectory(Guid fileId);
         Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId);
         Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId);

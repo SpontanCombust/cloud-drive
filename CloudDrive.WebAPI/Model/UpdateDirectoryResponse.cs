@@ -5,5 +5,6 @@ namespace CloudDrive.WebAPI.Model
     public class UpdateDirectoryResponse
     {
         public required FileVersionDTO NewFileVersionInfo { get; set; }
+        public required bool Changed { get; set; }
     }
 }
