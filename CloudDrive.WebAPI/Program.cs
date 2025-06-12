@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -101,6 +102,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var serverAddress = app.Urls.FirstOrDefault() ?? "http://localhost:5189";
+    logger.LogInformation("Swagger available on {Url}", $"{serverAddress}/swagger/index.html");
 }
 
 app.UseAuthentication();
