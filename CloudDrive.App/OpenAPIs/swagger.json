@@ -258,6 +258,242 @@
         }
       }
     },
+    "/files/dirs/{fileId}/restore": {
+      "post": {
+        "tags": [
+          "Directories"
+        ],
+        "operationId": "RestoreDirectory",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "FileVersionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RestoreSubfiles",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreDirectoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}": {
+      "get": {
+        "tags": [
+          "FileInfo"
+        ],
+        "operationId": "GetFileInfo",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}/versions": {
+      "get": {
+        "tags": [
+          "FileVersionInfo"
+        ],
+        "operationId": "GetFileVersionInfosForFile",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFileVersionInfosResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFileVersionInfosResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFileVersionInfosResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}/versions/{fileVersionId}": {
+      "get": {
+        "tags": [
+          "FileVersionInfo"
+        ],
+        "operationId": "GetFileVersionInfo",
+        "parameters": [
+          {
+            "name": "fileVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/file-info/{fileId}/versions/{fileVersionId}/ext": {
+      "get": {
+        "tags": [
+          "FileVersionInfo"
+        ],
+        "operationId": "GetFileVersionInfoExt",
+        "parameters": [
+          {
+            "name": "fileVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileVersionExtDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/regular": {
       "post": {
         "tags": [
@@ -319,7 +555,7 @@
         "tags": [
           "RegularFiles"
         ],
-        "operationId": "GetLatestFileVersion",
+        "operationId": "GetActiveFileVersion",
         "parameters": [
           {
             "name": "fileId",
@@ -498,6 +734,55 @@
         }
       }
     },
+    "/files/regular/{fileId}/restore": {
+      "post": {
+        "tags": [
+          "RegularFiles"
+        ],
+        "operationId": "RestoreFile",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "FileVersionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreFileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sync": {
       "get": {
         "tags": [
@@ -521,6 +806,45 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SyncAllResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/ext": {
+      "get": {
+        "tags": [
+          "Sync"
+        ],
+        "operationId": "SyncAllExt",
+        "parameters": [
+          {
+            "name": "Deleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncAllExtResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncAllExtResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncAllExtResponse"
                 }
               }
             }
@@ -642,6 +966,19 @@
           },
           "deleted": {
             "type": "boolean"
+          },
+          "activeFileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -685,6 +1022,101 @@
         },
         "additionalProperties": false
       },
+      "FileVersionExtDTO": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isDir": {
+            "type": "boolean"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "fileCreatedDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fileModifiedDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientDirPath": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientFileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "versionNr": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "md5": {
+            "type": "string",
+            "nullable": true
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "fileVersionCreatedDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetFileVersionInfosResponse": {
+        "type": "object",
+        "properties": {
+          "fileVersionsInfos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileVersionDTO"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreDirectoryResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "activeFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreFileResponse": {
+        "type": "object",
+        "properties": {
+          "fileInfo": {
+            "$ref": "#/components/schemas/FileDTO"
+          },
+          "activeFileVersionInfo": {
+            "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
       "SignInResponse": {
         "type": "object",
         "properties": {
@@ -697,6 +1129,19 @@
       },
       "SignUpResponse": {
         "type": "object",
+        "additionalProperties": false
+      },
+      "SyncAllExtResponse": {
+        "type": "object",
+        "properties": {
+          "currentFileVersionsInfosExt": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileVersionExtDTO"
+            },
+            "nullable": true
+          }
+        },
         "additionalProperties": false
       },
       "SyncAllResponse": {

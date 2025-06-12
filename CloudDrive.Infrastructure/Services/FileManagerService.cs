@@ -56,7 +56,8 @@ namespace CloudDrive.Infrastructure.Services
             inputStream.Seek(0, SeekOrigin.Begin);
             await fileSystemService.CreateFile(newFileVersionServerPath, inputStream);
 
-            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, false);
+            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, false, newFileVersionId);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 newFileId,
@@ -112,6 +113,7 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
+        [Obsolete("Use GetActiveFileVersion instead")]
         public async Task<GetFileResultDTO?> GetLatestFileVersion(Guid fileId)
         {
             var info = await fileInfoService.GetInfoForFile(fileId);
@@ -125,6 +127,41 @@ namespace CloudDrive.Infrastructure.Services
             }
 
             var verInfo = await fileVersionInfoService.GetInfoForLatestFileVersion(fileId);
+            if (verInfo == null)
+            {
+                return null;
+            }
+
+            byte[]? fileContent = null;
+            if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
+            {
+                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                fileContent = await fileSystemService.GetFile(filePath);
+            }
+
+            var result = new GetFileResultDTO
+            {
+                FileContent = fileContent,
+                ClientDirPath = verInfo.ClientDirPath,
+                ClientFileName = verInfo.ClientFileName
+            };
+
+            return result;
+        }
+
+        public async Task<GetFileResultDTO?> GetActiveFileVersion(Guid fileId)
+        {
+            var info = await fileInfoService.GetInfoForFile(fileId);
+            if (info == null)
+            {
+                return null;
+            }
+            if (info.IsDir)
+            {
+                throw new Exception("Requested file is not a regular file and instead a directory");
+            }
+
+            var verInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId);
             if (verInfo == null)
             {
                 return null;
@@ -183,6 +220,8 @@ namespace CloudDrive.Infrastructure.Services
 
             //FIXME make sure there are no local path conflicts between different active files
 
+            await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 fileId,
@@ -199,12 +238,41 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task DeleteFile(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, true);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: true, activeFileVersionId: null);
         }
 
-        public async Task RestoreFile(Guid fileId)
+        public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, false);
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
+
+            var result = new RestoreFileResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            return result;
+        }
+
+        public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId)
+        {
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
+
+            if (fileVersionInfo.FileId != fileId)
+            {
+                throw new Exception("File version does not belong to the specified file");
+            }
+
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+
+            var result = new RestoreFileResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            return result;
         }
 
 
@@ -222,7 +290,8 @@ namespace CloudDrive.Infrastructure.Services
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
 
-            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, true);
+            var fileInfo = await fileInfoService.CreateInfoForNewFile(newFileId, userId, true, newFileVersionId);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 newFileId,
@@ -262,6 +331,8 @@ namespace CloudDrive.Infrastructure.Services
 
             //FIXME make sure there are no local path conflicts between different active files
 
+            await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
+
             var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                 newFileVersionId,
                 fileId,
@@ -273,17 +344,54 @@ namespace CloudDrive.Infrastructure.Services
                 null
             );
 
+            //FIXME dependant files not affected!
+
             return fileVersionInfo;
         }
 
         public async Task DeleteDirectory(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, true);
+            await fileInfoService.UpdateInfoForFile(fileId, deleted: true, activeFileVersionId: null);
+
+            //FIXME dependant files not affected!
         }
 
-        public async Task RestoreDirectory(Guid fileId)
+        public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId)
         {
-            await fileInfoService.UpdateInfoForFile(fileId, false);
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
+
+            var result = new RestoreDirectoryResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            //FIXME dependant files never taken into account!
+
+            return result;
+        }
+
+        public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId)
+        {
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
+
+            if (fileVersionInfo.FileId != fileId)
+            {
+                throw new Exception("File version does not belong to the specified file");
+            }
+
+            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+
+            var result = new RestoreDirectoryResultDTO
+            {
+                FileInfo = fileInfo,
+                ActiveFileVersionInfo = fileVersionInfo
+            };
+
+            //FIXME dependant files never taken into account!
+
+            return result;
         }
 
 

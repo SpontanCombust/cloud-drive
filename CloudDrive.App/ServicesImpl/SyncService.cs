@@ -1,13 +1,10 @@
 ﻿using CloudDrive.App.Factories;
 using CloudDrive.App.Model;
 using CloudDrive.App.Services;
+using CloudDrive.App.Utils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Windows.Shapes;
 
 
 namespace CloudDrive.App.ServicesImpl
@@ -60,7 +57,7 @@ namespace CloudDrive.App.ServicesImpl
                 foreach (var fsPath in foldersToDownload)
                 {
                     Guid fileId = _fileVersionState[fsPath].FileId;
-                    syncTasks.Add(DownloadLatestFolderFromRemoteAsync(fileId, fsPath));
+                    syncTasks.Add(DownloadActiveFolderFromRemoteAsync(fileId, fsPath));
                 }
 
                 var foldersToUpload = localFolders.Except(syncedFolders);
@@ -86,7 +83,7 @@ namespace CloudDrive.App.ServicesImpl
                 foreach (var fsPath in filesToDownload)
                 {
                     Guid fileId = _fileVersionState[fsPath].FileId;
-                    syncTasks.Add(DownloadLatestFileFromRemoteAsync(fileId, fsPath));
+                    syncTasks.Add(DownloadActiveFileFromRemoteAsync(fileId, fsPath));
                 }
 
                 var filesToUpload = localFiles.Except(syncedFiles);
@@ -198,7 +195,7 @@ namespace CloudDrive.App.ServicesImpl
 
         //Foldery
 
-        private async Task DownloadLatestFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
+        private async Task DownloadActiveFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
         {
             var bench = _benchmarkService.StartBenchmark("Pobieranie folderu", path.Relative);
 
@@ -371,6 +368,115 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
+        /// <summary>
+        /// Przywraca folder ze stanu usuniętego na serwerze.
+        /// </summary>
+        public async Task RestoreFolderFromRemoteAsync(Guid fileId)
+        {
+            if (TryGetLocalFileInfoByFileId(fileId, out var oldFsPath, out _))
+            {
+                _logger.LogDebug("Folder {} nie zostanie przywrócony, bo nadal istnieje w systemie", oldFsPath.Full);
+                return;
+            }
+
+
+            var bench = _benchmarkService.StartBenchmark("Przywrócenie folderu");
+
+            try
+            {
+                var restoredState = await Api.RestoreDirectoryAsync(fileId, null, null);
+
+                string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
+
+                _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
+
+                Directory.CreateDirectory(newFullPath);
+
+                // przywracanie uprzedniej zawartości folderu nie jest obsługiwane
+
+                _logger.LogInformation("Przywrócono folder z serwera: {Path}", newFsPath.Full);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy przywracaniu folderu: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    oldFsPath.Full, ex.StatusCode, ex.Response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy przywracaniu folderu: {Path}", oldFsPath.Full);
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        /// <summary>
+        /// Przywraca konkretną wersję folderu, wliczając sytuację jeśli jest on już usunięty
+        /// </summary>
+        public async Task RestoreFolderFromRemoteAsync(Guid fileId, Guid fileVersionId)
+        {
+            var bench = _benchmarkService.StartBenchmark("Przywrócenie wersji folderu");
+
+            WatchedFileSystemPath? oldFsPath = null;
+            FileVersionDTO? oldFileVersion = null;
+            bool oldFolderFound = TryGetLocalFileInfoByFileId(fileId, out oldFsPath, out oldFileVersion);
+
+            try
+            {
+                var restoredState = await Api.RestoreDirectoryAsync(fileId, fileVersionId, null);
+
+                string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
+
+                // zapis odtworzonych informacji o wersji pliku
+                // ta czynność jest wspólna dla wszystkich przypadków
+                _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
+
+                if (oldFolderFound)
+                {
+                    // jeśli folder już istnieje a poprzednia wersja miała inną ścieżkę, to przenosimy folder
+                    if (!oldFsPath.Equals(newFsPath))
+                    {
+                        // przenosimy folder, więc trzeba usunąć informacje o starej ścieżce
+                        _fileVersionState.Remove(oldFsPath);
+
+                        Directory.Move(oldFsPath.Full, newFullPath);
+
+                        _logger.LogInformation("Przywrócono stan folderu z serwera: {OldPath} -> {NewPath}", oldFsPath.Full, newFsPath.Full);
+                    }
+                    // jeśli już istnieje a przywrócona wersja nie różni się ścieżką, to nie robimy nic w systemie plików
+                    else
+                    {
+                        _logger.LogInformation("Przywrócono stan folderu z serwera: nie dokonano zmian dla {OldPath}", oldFsPath.Full);
+                    }
+                }
+                // jeśli folder nie istnieje, to tworzymy go
+                else
+                {
+                    Directory.CreateDirectory(newFullPath);
+
+                    _logger.LogInformation("Przywrócono folder z serwera: {Path}", newFsPath.Full);
+                }
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy przywracaniu folderu: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    oldFsPath.Full, ex.StatusCode, ex.Response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy przywracaniu folderu: {Path}", oldFsPath.Full);
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
 
 
         //Pliki
@@ -415,13 +521,13 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        private async Task DownloadLatestFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
+        private async Task DownloadActiveFileFromRemoteAsync(Guid fileId, WatchedFileSystemPath path)
         {
             var bench = _benchmarkService.StartBenchmark("Pobieranie pliku", path.Relative);
 
             try
             {
-                var fileResponse = await Api.GetLatestFileVersionAsync(fileId);
+                var fileResponse = await Api.GetActiveFileVersionAsync(fileId);
 
                 Directory.CreateDirectory(path.FullParentDir);
 
@@ -577,6 +683,123 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
+        /// <summary>
+        /// Przywraca plik ze stanu usuniętego na serwerze
+        /// </summary>
+        public async Task RestoreFileFromRemoteAsync(Guid fileId)
+        {
+            if (TryGetLocalFileInfoByFileId(fileId, out var oldFsPath, out _))
+            {
+                _logger.LogDebug("Plik {} nie zostanie przywrócony, bo nadal istnieje w systemie", oldFsPath.Full);
+                return;
+            }
+
+
+            var bench = _benchmarkService.StartBenchmark("Przywrócenie pliku");
+
+            try
+            {
+                var restoredState = await Api.RestoreFileAsync(fileId, null);
+
+                string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, false);
+
+                _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
+
+
+                var fileResponse = await Api.GetFileVersionAsync(fileId, restoredState.ActiveFileVersionInfo.VersionNr);
+
+                Directory.CreateDirectory(newFsPath.FullParentDir);
+
+                using (var fileStream = File.Create(newFsPath.Full))
+                {
+                    await fileResponse.Stream.CopyToAsync(fileStream);
+
+                    _logger.LogInformation("Pobrano plik do: {Path}", newFsPath.Full);
+                }
+
+                _logger.LogInformation("Przywrócono stan pliku z serwera: {Path}", newFsPath.Relative);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy przywracaniu pliku: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    oldFsPath.Full, ex.StatusCode, ex.Response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy przywracaniu pliku: {Path}", oldFsPath.Full);
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        /// <summary>
+        /// Przywraca konkretną wersję pliku, wliczając sytuację jeśli jest on już usunięty
+        /// </summary>
+        public async Task RestoreFileFromRemoteAsync(Guid fileId, Guid fileVersionId)
+        {
+            var bench = _benchmarkService.StartBenchmark("Przywrócenie wersji pliku");
+
+            WatchedFileSystemPath? oldFsPath = null;
+            FileVersionDTO? oldFileVersion = null;
+            bool oldFileFound = TryGetLocalFileInfoByFileId(fileId, out oldFsPath, out oldFileVersion);
+
+            try
+            {
+                var restoredState = await Api.RestoreFileAsync(fileId, fileVersionId);
+
+                string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
+
+                // zapis odtworzonych informacji o wersji pliku
+                // ta czynność jest wspólna dla wszystkich przypadków
+                _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
+
+
+                // jeśli istnieje już ten plik, trzeba go usunąć
+                if (oldFileFound)
+                {
+                    _fileVersionState.Remove(oldFsPath);
+
+                    File.Delete(oldFsPath.Full);
+
+                    _logger.LogInformation("Usunięto niechcianą wersję pliku: {OldPath}", oldFsPath.Full);
+                }
+
+
+                // przywracamy oczekiwaną wersję pliku
+                var fileResponse = await Api.GetFileVersionAsync(fileId, restoredState.ActiveFileVersionInfo.VersionNr);
+
+                Directory.CreateDirectory(newFsPath.FullParentDir);
+
+                using (var fileStream = File.Create(newFsPath.Full))
+                {
+                    await fileResponse.Stream.CopyToAsync(fileStream);
+
+                    _logger.LogInformation("Pobrano plik do: {Path}", newFsPath.Full);
+                }
+
+                _logger.LogInformation("Przywrócono stan pliku z serwera: {Path}", newFsPath.Relative);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy przywracaniu pliku: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    oldFsPath.Full, ex.StatusCode, ex.Response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy przywracaniu pliku: {Path}", oldFsPath.Full);
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
 
 
         private HashSet<WatchedFileSystemPath> ScanWatchedFolder()
@@ -600,6 +823,25 @@ namespace CloudDrive.App.ServicesImpl
                 .ToHashSet();
 
             return localFiles.Union(localDirs).ToHashSet();
+        }
+
+
+        private bool TryGetLocalFileInfoByFileId(Guid fileId, out WatchedFileSystemPath path, out FileVersionDTO fv)
+        {
+            var q = _fileVersionState.Where(kv => kv.Value.FileId == fileId);
+            if (q.Any())
+            {
+                var kv = q.First();
+                path = kv.Key;
+                fv = kv.Value;
+                return true;
+            }
+            else
+            {
+                path = null!;
+                fv = null!;
+                return false;
+            }
         }
 
 
