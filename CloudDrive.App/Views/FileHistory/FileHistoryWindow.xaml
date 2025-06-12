@@ -13,39 +13,55 @@
             <ColumnDefinition Width="69*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- File Tree View -->
-        <TreeView x:Name="FileIndexTreeView" 
-                  Grid.Column="0" 
-                  SelectedItemChanged="FileIndexTreeView_SelectedItemChanged">
-            <TreeView.Resources>
-                <!-- Template for all file items -->
-                <HierarchicalDataTemplate DataType="{x:Type local:FileIndexTreeItemViewModel}" 
-                                        ItemsSource="{Binding Subindices}">
-                    <TextBlock Text="{Binding FileName}"/>
-                </HierarchicalDataTemplate>
-            </TreeView.Resources>
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- File Tree View -->
+            <TreeView x:Name="FileIndexTreeView" 
+                      Grid.Row="0" 
+                      SelectedItemChanged="FileIndexTreeView_SelectedItemChanged">
+                <TreeView.Resources>
+                    <!-- Template for all file items -->
+                    <HierarchicalDataTemplate DataType="{x:Type local:FileIndexTreeItemViewModel}" 
+                                            ItemsSource="{Binding Subindices}">
+                        <TextBlock Text="{Binding FileName}"/>
+                    </HierarchicalDataTemplate>
+                </TreeView.Resources>
 
-            <!-- Active Files Branch -->
-            <TreeViewItem ItemsSource="{Binding Active}" IsExpanded="True">
-                <TreeViewItem.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="Pliki" FontWeight="Bold"/>
-                    </DataTemplate>
-                </TreeViewItem.HeaderTemplate>
-            </TreeViewItem>
+                <!-- Active Files Branch -->
+                <TreeViewItem ItemsSource="{Binding Active}" IsExpanded="True">
+                    <TreeViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Pliki" FontWeight="Bold"/>
+                        </DataTemplate>
+                    </TreeViewItem.HeaderTemplate>
+                </TreeViewItem>
 
-            <!-- Spacing -->
-            <Rectangle Height="0" Margin="0,5,0,5"/>
+                <!-- Spacing -->
+                <Rectangle Height="0" Margin="0,5,0,5"/>
 
-            <!-- Archived Files Branch -->
-            <TreeViewItem ItemsSource="{Binding Archived}">
-                <TreeViewItem.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="Archiwum" FontWeight="Bold" Foreground="Gray"/>
-                    </DataTemplate>
-                </TreeViewItem.HeaderTemplate>
-            </TreeViewItem>
-        </TreeView>
+                <!-- Archived Files Branch -->
+                <TreeViewItem ItemsSource="{Binding Archived}">
+                    <TreeViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Archiwum" FontWeight="Bold" Foreground="Gray"/>
+                        </DataTemplate>
+                    </TreeViewItem.HeaderTemplate>
+                </TreeViewItem>
+            </TreeView>
+
+            <Button Name="RefreshButton"
+                Grid.Row="1" 
+                Content="Odśwież" 
+                Click="RefreshButton_Click"
+                Margin="10"
+                Padding="20,5"
+                HorizontalAlignment="Right"/>
+        </Grid>
+        
 
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
 

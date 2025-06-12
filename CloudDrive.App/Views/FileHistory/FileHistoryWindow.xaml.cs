@@ -194,6 +194,11 @@ namespace CloudDrive.App.Views.FileHistory
             }
         }
 
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            await FillFileIndexTree();
+        }
+
 
 
         public event PropertyChangedEventHandler? PropertyChanged;
