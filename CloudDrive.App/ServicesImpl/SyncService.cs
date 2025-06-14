@@ -181,7 +181,7 @@ namespace CloudDrive.App.ServicesImpl
             {
                 bool isDir = fv.Md5 == null && fv.SizeBytes == null; // albo fv.IsDirectory, jeśli dodasz property
 
-                var fullPath = System.IO.Path.Combine(watched, fv.ClientDirPath ?? "", fv.ClientFileName);
+                var fullPath = System.IO.Path.Combine(watched, fv.ClientFilePath());
                 var path = new WatchedFileSystemPath(fullPath, watched, isDir);
 
                 if (_fileVersionState.TryGetValue(path, out var existing))
@@ -491,7 +491,7 @@ namespace CloudDrive.App.ServicesImpl
                 var restoredState = await Api.RestoreDirectoryAsync(fileId, null, null);
 
                 string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
-                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientFilePath());
                 var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
 
                 _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
@@ -533,7 +533,7 @@ namespace CloudDrive.App.ServicesImpl
                 var restoredState = await Api.RestoreDirectoryAsync(fileId, fileVersionId, null);
 
                 string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
-                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientFilePath());
                 var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
 
                 // zapis odtworzonych informacji o wersji pliku
@@ -832,7 +832,7 @@ namespace CloudDrive.App.ServicesImpl
                 var restoredState = await Api.RestoreFileAsync(fileId, null);
 
                 string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
-                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientFilePath());
                 var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, false);
 
                 _fileVersionState[newFsPath] = restoredState.ActiveFileVersionInfo;
@@ -882,7 +882,7 @@ namespace CloudDrive.App.ServicesImpl
                 var restoredState = await Api.RestoreFileAsync(fileId, fileVersionId);
 
                 string watchedFolder = _userSettingsService.WatchedFolderPath ?? string.Empty;
-                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientPath());
+                string newFullPath = Path.Combine(watchedFolder, restoredState.ActiveFileVersionInfo.ClientFilePath());
                 var newFsPath = new WatchedFileSystemPath(newFullPath, watchedFolder, true);
 
                 // zapis odtworzonych informacji o wersji pliku

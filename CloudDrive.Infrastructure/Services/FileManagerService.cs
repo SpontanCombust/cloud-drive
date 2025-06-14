@@ -99,7 +99,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 
@@ -135,7 +140,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 
@@ -170,7 +180,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 

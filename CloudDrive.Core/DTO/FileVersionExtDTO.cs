@@ -44,5 +44,17 @@ namespace CloudDrive.Core.DTO
             SizeBytes = fv.SizeBytes;
             FileVersionCreatedDate = fv.CreatedDate;
         }
+
+
+        /// <summary>
+        /// Relative path to this file or directory on the client side
+        /// </summary>
+        public string ClientFilePath()
+        {
+            return Path.Combine(
+                ClientDirPath ?? string.Empty,
+                ClientFileName
+            );
+        }
     }
 }

@@ -104,7 +104,7 @@ namespace CloudDrive.App.Views.FileHistory
                     FileVersionItems.InsertSorted(new FileVersionListItemViewModel
                     {
                         FileVersionId = version.FileVersionId,
-                        ClientPath = Path.Combine(version.ClientDirPath ?? "", version.ClientFileName),
+                        ClientPath = version.ClientFilePath(),
                         VersionNr = version.VersionNr,
                         Md5 = version.Md5,
                         SizeBytes = version.SizeBytes,
@@ -182,7 +182,7 @@ namespace CloudDrive.App.Views.FileHistory
 
                 foreach (var fv in fvs)
                 {
-                    var treeItem = new FileIndexTreeItemViewModel(fv.ClientPath(), fv.IsDir, fv.Deleted, fv.FileId);
+                    var treeItem = new FileIndexTreeItemViewModel(fv.ClientFilePath(), fv.IsDir, fv.Deleted, fv.FileId);
                     TreeViewModel.InsertIndex(treeItem);
                 }
             }
