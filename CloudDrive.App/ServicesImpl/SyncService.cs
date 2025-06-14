@@ -506,16 +506,19 @@ namespace CloudDrive.App.ServicesImpl
             {
                 using var fileStream = File.OpenRead(path.Full);
 
+
                 var fileParam = new FileParameter(fileStream, path.FileName, "application/octet-stream");
                 var resp = await Api.CreateFileAsync(fileParam, path.RelativeParentDir);
 
-                _fileVersionState.Add(path, resp.FirstFileVersionInfo);
+                _fileVersionState[path] = resp.FirstFileVersionInfo;
 
                 _logger.LogInformation($"Wysłano plik z: {path.Full}");
             }
             catch (ApiException ex)
             {
-                throw new Exception(ex.Response);
+                _logger.LogError("Błąd API (Upload file): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    path.Full, ex.StatusCode, ex.Response);
+                throw;
             }
             catch (Exception ex)
             {
