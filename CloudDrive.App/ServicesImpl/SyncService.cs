@@ -5,6 +5,7 @@ using CloudDrive.App.Utils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Security.Cryptography;
 
 
 namespace CloudDrive.App.ServicesImpl
@@ -63,7 +64,7 @@ namespace CloudDrive.App.ServicesImpl
                 var foldersToUpload = localFolders.Except(syncedFolders);
                 foreach (var fsPath in foldersToUpload)
                 {
-                    syncTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
+                    syncTasks.Add(UploadNewFolderRecursivelyAsync(fsPath));
                 }
 
                 var foldersToRemove = syncedFolders.Except(localFolders);
@@ -157,13 +158,20 @@ namespace CloudDrive.App.ServicesImpl
                 var fullPath = System.IO.Path.Combine(watched, fv.ClientDirPath ?? "", fv.ClientFileName);
                 var path = new WatchedFileSystemPath(fullPath, watched, isDir);
 
-                if (!_fileVersionState.ContainsKey(path))
+                if (_fileVersionState.TryGetValue(path, out var existing))
                 {
-                    _fileVersionState[path] = fv;
+                    if (existing.FileId != fv.FileId)
+                    {
+                        _logger.LogWarning("Duplikat ścieżki z różnymi ID: {Path}", path.Full);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Zignorowano zduplikowany wpis: {Path}", path.Full);
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Duplikat ścieżki podczas budowy stanu plików: {Path}", path.Full);
+                    _fileVersionState[path] = fv;
                 }
 
                 if (string.IsNullOrEmpty(fv.ClientFileName))
@@ -173,8 +181,6 @@ namespace CloudDrive.App.ServicesImpl
                 }
             }
         }
-
-
         public bool IsDirectory(FileVersionDTO fv)
         {
             return fv.Md5 == null && fv.SizeBytes == null;
@@ -194,6 +200,71 @@ namespace CloudDrive.App.ServicesImpl
 
 
         //Foldery
+
+        public async Task UploadNewFolderRecursivelyAsync(WatchedFileSystemPath folderPath)
+        {
+            if (!folderPath.IsDirectory || !folderPath.Exists)
+            {
+                _logger.LogWarning("Ścieżka nie jest folderem lub nie istnieje: {Path}", folderPath.Full);
+                return;
+            }
+
+            try
+            {
+                await UploadNewFolderToRemoteAsync(folderPath);
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy tworzeniu folderu: {Path}, StatusCode: {StatusCode}, Response: {Response}",
+                    folderPath.Full, ex.StatusCode, ex.Response);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Nieoczekiwany błąd przy tworzeniu folderu: {Path}", folderPath.Full);
+                return;
+            }
+
+            try
+            {
+                var directoryInfo = new DirectoryInfo(folderPath.Full);
+
+                foreach (var dir in directoryInfo.GetDirectories())
+                {
+                    try
+                    {
+                        var subFolderPath = new WatchedFileSystemPath(dir.FullName, folderPath.WatchedFolder, true);
+                        await UploadNewFolderRecursivelyAsync(subFolderPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Błąd przy rekurencyjnym wysyłaniu folderu: {Path}", dir.FullName);
+                    }
+                }
+
+                foreach (var file in directoryInfo.GetFiles())
+                {
+                    if (file.Name.StartsWith("~$")) continue;
+
+                    try
+                    {
+                        var filePath = new WatchedFileSystemPath(file.FullName, folderPath.WatchedFolder, false);
+                        await UploadNewFileToRemoteAsync(filePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Błąd przy wysyłaniu pliku w folderze: {File}", file.FullName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas przetwarzania zawartości folderu: {Path}", folderPath.Full);
+            }
+        }
+
+
+
 
         private async Task DownloadActiveFolderFromRemoteAsync(Guid folderId, WatchedFileSystemPath path)
         {
@@ -562,6 +633,17 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
+        public static class FileHashHelper
+        {
+            public static string CalculateFileHash(string filePath)
+            {
+                using var md5 = MD5.Create();
+                using var stream = File.OpenRead(filePath);
+                var hash = md5.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
         public async Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
         {
             if (path.FileName.StartsWith("~$"))
@@ -569,6 +651,7 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
                 return;
             }
+
             if (!path.Exists)
             {
                 throw new FileNotFoundException("Nie znaleziono pliku lokalnie", path.Full);
@@ -579,6 +662,14 @@ namespace CloudDrive.App.ServicesImpl
                 throw new InvalidOperationException("Nie znaleziono wersji pliku na serwerze.");
             }
 
+            // 🔍 Oblicz lokalny hash i porównaj
+            string localHash = FileHashHelper.CalculateFileHash(path.Full);
+            if (!string.IsNullOrEmpty(version.Md5) &&
+                localHash.Equals(version.Md5, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
+                return;
+            }
 
             var bench = _benchmarkService.StartBenchmark("Aktualizacja pliku", path.Relative);
 
@@ -592,7 +683,6 @@ namespace CloudDrive.App.ServicesImpl
                 if (updateResp.Changed)
                 {
                     _fileVersionState[path] = updateResp.NewFileVersionInfo;
-
                     _logger.LogInformation("Zaktualizowano plik na serwerze: {Path}", path.Full);
                 }
                 else
@@ -615,7 +705,6 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
-
         public async Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath)
         {
             if (newPath.FileName.StartsWith("~$"))

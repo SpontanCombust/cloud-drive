@@ -102,7 +102,7 @@ namespace CloudDrive.App.ServicesImpl
                         }
                         else
                         {
-                            await _syncService.UploadNewFolderToRemoteAsync(path);
+                            await _syncService.UploadNewFolderRecursivelyAsync(path);
                         }
                     }
                     else
