@@ -150,5 +150,17 @@ namespace CloudDrive.App.Views
             var fileHistoryWindow = _viewLocator.FileHistoryWindow();
             fileHistoryWindow.Show();
         }
+
+        private void WrapTextCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (WrapTextCheckBox.IsChecked == true)
+            {
+                LogTextBox.TextWrapping = TextWrapping.Wrap;
+            }
+            else
+            {
+                LogTextBox.TextWrapping = TextWrapping.NoWrap;
+            }
+        }
     }
 }
