@@ -252,8 +252,25 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDirectoryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDirectoryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDirectoryResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -946,6 +963,26 @@
           },
           "firstFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteDirectoryResponse": {
+        "type": "object",
+        "properties": {
+          "affectedSubfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileDTO"
+            },
+            "nullable": true
+          },
+          "affectedSubfileVersions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileVersionDTO"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

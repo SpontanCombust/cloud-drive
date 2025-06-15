@@ -455,15 +455,31 @@ namespace CloudDrive.App.ServicesImpl
 
             try
             {
-                await Api.DeleteDirectoryAsync(version.FileId);
+                var resp = await Api.DeleteDirectoryAsync(version.FileId);
+                _logger.LogInformation("Usunięto folder z serwera: {Path}", path.Full);
 
                 _fileVersionState.Remove(path);
+                _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
 
-                _logger.LogInformation($"Usunięto folder z serwera: {path.Full}");
+                var pathsToRemove = _fileVersionState.Keys
+                    .Where(p => p.Full.StartsWith(path.Full + Path.DirectorySeparatorChar))
+                    .ToArray();
+
+                foreach (var p in pathsToRemove)
+                {
+                    _fileVersionState.Remove(p);
+                    _logger.LogInformation("Usunięto informacje o pliku lub folderze wewnątrz usuniętego katalogu: {Path}", p.Relative);
+                }
+
+                if (pathsToRemove.Length != resp.AffectedSubfiles.Count)
+                {
+                    _logger.LogWarning("Ilość usuniętych plików/folderów ({Count}) nie zgadza się z ilością zmienionych plików na serwerze ({ServerCount})",
+                        pathsToRemove.Length, resp.AffectedSubfiles.Count);
+                }
             }
             catch (ApiException ex)
             {
-                _logger.LogError(ex, $"Błąd przy usuwaniu folderu: {path.Full}");
+                _logger.LogError(ex, "Błąd przy usuwaniu folderu: {Path}", path.Full);
                 throw;
             }
             finally

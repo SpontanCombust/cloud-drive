@@ -162,13 +162,44 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<FileVersionDTO[]> GetInfoForAllActiveUserFileVersions(Guid userId)
         {
-            var activeUserFiles = dbContext.Files
-                .Where(f => f.UserId == userId && !f.Deleted);
-
             var q = from file in dbContext.Files
                     join fileVersion in dbContext.FileVersions
                     on file.ActiveFileVersionId equals fileVersion.FileVersionId
                     where file.UserId == userId && !file.Deleted
+                    select fileVersion;
+
+            var fvs = await q.ToArrayAsync();
+
+            return fvs.Select(fv => fv.ToDto()).ToArray();
+        }
+
+        public async Task<FileVersionDTO[]> GetInfoForAllActiveFileVersionsUnderDirectory(Guid directoryFileId, bool includeDeleted)
+        {
+            var fileInfo = await dbContext.Files.FindAsync(directoryFileId);
+            if (fileInfo == null || !fileInfo.IsDir)
+            {
+                throw new ArgumentException("Provided file ID does not correspond to a directory or does not exist.", nameof(directoryFileId));
+            }
+
+            var activeFileVersionInfo = await GetInfoForActiveFileVersion(directoryFileId) ?? throw new Exception("No active file version found for this directory");
+
+            var userId = fileInfo.UserId;
+            var clientDirectoryPath = activeFileVersionInfo.ClientFilePath();
+
+            var clientDirectoryPathUnterminated = clientDirectoryPath.TrimEnd(Path.DirectorySeparatorChar);
+            // Make sure path ends with the separator so we don't match other files in the same directory
+            // For example if clientDirectoryPath is "foo/bar" without the separator at the end it could match
+            // both "foo/bar/baz.txt" and "foo/bar2.txt" files and we don't want that
+            var clientDirectoryPathTerminated = clientDirectoryPathUnterminated + Path.DirectorySeparatorChar;
+
+            var q = from file in dbContext.Files
+                    join fileVersion in dbContext.FileVersions
+                    on file.ActiveFileVersionId equals fileVersion.FileVersionId
+                    where file.UserId == userId
+                       && (includeDeleted || !file.Deleted)
+                       && fileVersion.ClientDirPath != null
+                       && (fileVersion.ClientDirPath == clientDirectoryPathUnterminated
+                           || fileVersion.ClientDirPath.StartsWith(clientDirectoryPathTerminated))
                     select fileVersion;
 
             var fvs = await q.ToArrayAsync();

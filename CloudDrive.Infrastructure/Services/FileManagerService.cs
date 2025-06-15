@@ -409,11 +409,34 @@ namespace CloudDrive.Infrastructure.Services
             }
         }
 
-        public async Task DeleteDirectory(Guid fileId)
+        public async Task<DeleteDirectoryResultDTO> DeleteDirectory(Guid fileId)
         {
+            if (!await fileInfoService.FileIsDirectory(fileId))
+            {
+                throw new ArgumentException("Requested file is not a directory and instead a regular file", nameof(fileId));
+            }
+
             await fileInfoService.UpdateInfoForFile(fileId, deleted: true, activeFileVersionId: null);
 
-            //FIXME dependant files not affected!
+
+            var subfileFileVersions = await fileVersionInfoService.GetInfoForAllActiveFileVersionsUnderDirectory(fileId, false);
+            var fileIds = subfileFileVersions.Select(fv => fv.FileId).ToArray();
+            var files = await fileInfoService.GetInfoForManyFiles(fileIds);
+
+            foreach (var f in files)
+            {
+                f.Deleted = true;
+            }
+
+            await fileInfoService.UpdateInfoForManyFiles(files);
+
+            var result = new DeleteDirectoryResultDTO
+            {
+                AffectedSubfiles = files,
+                AffectedSubfileVersions = subfileFileVersions
+            };
+
+            return result;
         }
 
         public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId)

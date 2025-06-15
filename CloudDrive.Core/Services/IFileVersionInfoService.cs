@@ -25,6 +25,10 @@ namespace CloudDrive.Core.Services
         Task<FileVersionDTO?> GetInfoForActiveFileVersion(Guid fileId);
         Task<FileVersionDTO[]> GetInfoForUserFileVersions(Guid userId, Guid fileId);
         Task<FileVersionDTO[]> GetInfoForAllActiveUserFileVersions(Guid userId);
+        /// <summary>
+        /// Returns file version information about all user's active file versions inside a client directory (for that entire file subtree).
+        /// </summary>
+        Task<FileVersionDTO[]> GetInfoForAllActiveFileVersionsUnderDirectory(Guid directoryFileId, bool includeDeleted);
         Task<FileVersionExtDTO[]> GetInfoForAllActiveUserFileVersionsExt(Guid userId, bool includeDeleted);
         /// <summary>
         /// Find if for a user there ever was a file version with these exact same content characteristics

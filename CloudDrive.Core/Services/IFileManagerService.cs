@@ -16,7 +16,7 @@ namespace CloudDrive.Core.Services
 
         Task<CreateDirectoryResultDTO> CreateDirectory(Guid userId, string fileName, string? clientDirPath);
         Task<UpdateDirectoryResultDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath);
-        Task DeleteDirectory(Guid fileId);
+        Task<DeleteDirectoryResultDTO> DeleteDirectory(Guid fileId);
         Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId);
         Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId);
     }
