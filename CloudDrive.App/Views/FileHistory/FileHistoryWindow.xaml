@@ -26,8 +26,18 @@
                 <TreeView.Resources>
                     <!-- Template for all file items -->
                     <HierarchicalDataTemplate DataType="{x:Type local:FileIndexTreeItemViewModel}" 
-                                            ItemsSource="{Binding Subindices}">
-                        <TextBlock Text="{Binding FileName}"/>
+                                              ItemsSource="{Binding Subindices}">
+                        <TextBlock Text="{Binding FileName}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </HierarchicalDataTemplate>
                 </TreeView.Resources>
 
