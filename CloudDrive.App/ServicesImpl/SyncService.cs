@@ -175,7 +175,7 @@ namespace CloudDrive.App.ServicesImpl
                 throw new Exception("Ścieżka do obserwowanego folderu nie została ustawiona lub nie istnieje.");
 
             var response = await Api.SyncAllAsync();
-            _fileVersionState = new Dictionary<WatchedFileSystemPath, FileVersionDTO>();
+            _fileVersionState.Clear();
 
             foreach (var fv in response.CurrentFileVersionsInfos)
             {
@@ -729,6 +729,7 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
+
         public async Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath)
         {
             if (newPath.FileName.StartsWith("~$"))
@@ -972,6 +973,13 @@ namespace CloudDrive.App.ServicesImpl
                 fv = null!;
                 return false;
             }
+        }
+
+        public WatchedFileSystemPath? FindWatchedFileSystemPathByFullPath(string rawFullPath)
+        {
+            return _fileVersionState.Keys
+                .Where(k => k.Full.Equals(rawFullPath, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
         }
 
 
