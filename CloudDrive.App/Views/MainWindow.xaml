@@ -16,7 +16,8 @@
         <tb:TaskbarIcon x:Name="SystemTrayIcon" 
                        IconSource="/Assets/cloud-drive.ico"
                        ToolTipText="CloudDrive"
-                       Visibility="Visible">
+                       Visibility="Visible" 
+                       TrayMouseDoubleClick="SystemTrayIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Przywróć" Click="SystemTrayIconRestore_Click"/>

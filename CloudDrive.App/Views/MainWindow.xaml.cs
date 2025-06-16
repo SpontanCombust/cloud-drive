@@ -68,5 +68,12 @@ namespace CloudDrive.App.Views
             SystemTrayIcon.Visibility = Visibility.Collapsed;
             Application.Current.Shutdown();
         }
+
+        private void SystemTrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            this.ShowInTaskbar = true;
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        }
     }
 }
