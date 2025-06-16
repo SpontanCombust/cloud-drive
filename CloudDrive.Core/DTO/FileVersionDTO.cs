@@ -38,5 +38,30 @@ namespace CloudDrive.Core.DTO
         /// UTC creation date of the record on the server
         /// </summary>
         public DateTime CreatedDate { get; set; }
+
+
+        /// <summary>
+        /// Relative path to this file or directory on the client side
+        /// </summary>
+        public string ClientFilePath()
+        {
+            return Path.Combine(
+                ClientDirPath ?? string.Empty,
+                ClientFileName
+            );
+        }
+
+        /// <summary>
+        /// Relative path to this file on the server file system (directories are not stored)
+        /// </summary>
+        public string? ServerFilePath()
+        {
+            return (ServerDirPath != null || ServerFileName != null)
+                ? Path.Combine(
+                    ServerDirPath ?? string.Empty,
+                    ServerFileName ?? string.Empty
+                )
+                : null;
+        }
     }
 }

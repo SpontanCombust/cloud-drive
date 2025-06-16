@@ -4,18 +4,26 @@ namespace CloudDrive.App.Utils
 {
     static class FileVersionDTOExtensions
     {
-        public static string ClientPath(this FileVersionDTO fv)
+        /// <summary>
+        /// Relative path to this file or directory on the client side
+        /// </summary>
+        public static string ClientFilePath(this FileVersionDTO fv)
         {
-            return fv.ClientDirPath != null
-                ? Path.Combine(fv.ClientDirPath, fv.ClientFileName)
-                : fv.ClientFileName;
+            return Path.Combine(
+                fv.ClientDirPath ?? string.Empty,
+                fv.ClientFileName ?? string.Empty
+            );
         }
 
-        public static string ClientPath(this FileVersionExtDTO fv)
+        /// <summary>
+        /// Relative path to this file or directory on the client side
+        /// </summary>
+        public static string ClientFilePath(this FileVersionExtDTO fv)
         {
-            return fv.ClientDirPath != null
-                ? Path.Combine(fv.ClientDirPath, fv.ClientFileName)
-                : fv.ClientFileName;
+            return Path.Combine(
+                fv.ClientDirPath ?? string.Empty,
+                fv.ClientFileName ?? string.Empty
+            );
         }
     }
 }

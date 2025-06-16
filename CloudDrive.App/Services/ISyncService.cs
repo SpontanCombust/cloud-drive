@@ -5,7 +5,7 @@ namespace CloudDrive.App.Services
     public interface ISyncService
     {
         Task SynchronizeAllFilesAsync();
-
+        Task UploadNewFolderRecursivelyAsync(WatchedFileSystemPath folderPath);
         Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path);
         Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path);
         Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath);
@@ -21,5 +21,6 @@ namespace CloudDrive.App.Services
         Task RestoreFolderFromRemoteAsync(Guid fileId, Guid fileVersionId);
 
         bool TryGetFileId(WatchedFileSystemPath path, out Guid fileId);
+        WatchedFileSystemPath? FindWatchedFileSystemPathByFullPath(string rawFullPath);
     }
 }

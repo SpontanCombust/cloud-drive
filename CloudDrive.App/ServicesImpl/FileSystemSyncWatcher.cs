@@ -102,7 +102,7 @@ namespace CloudDrive.App.ServicesImpl
                         }
                         else
                         {
-                            await _syncService.UploadNewFolderToRemoteAsync(path);
+                            await _syncService.UploadNewFolderRecursivelyAsync(path);
                         }
                     }
                     else
@@ -131,10 +131,14 @@ namespace CloudDrive.App.ServicesImpl
             {
                 try
                 {
-                    bool wasDir = false;
-                    var path = new WatchedFileSystemPath(e.FullPath, _watchedFolder, isDirectory: false);
+                    var path = _syncService.FindWatchedFileSystemPathByFullPath(e.FullPath);
+                    if (path == null)
+                    {
+                        _logger.LogWarning("Nie znaleziono informacji dla usuniętego pliku: {Path}", e.FullPath);
+                        return;
+                    }
 
-                    if (wasDir)
+                    if (path.IsDirectory)
                     {
                         await _syncService.RemoveFoldersFromRemoteAsync(path);
                     }

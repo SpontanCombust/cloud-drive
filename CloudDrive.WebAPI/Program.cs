@@ -3,10 +3,10 @@ using CloudDrive.Infrastructure.Repositories;
 using CloudDrive.Infrastructure.Services;
 using CloudDrive.WebAPI.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -89,9 +89,17 @@ builder.Services.AddHttpLogging(o => {
     o.LoggingFields = HttpLoggingFields.All;
 });
 
+
+const long MAX_REQUEST_SIZE = 8_589_934_592; // 8 GiB
+
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options.Limits.MaxRequestBodySize = 8_589_934_592; // 8 GiB
+    options.Limits.MaxRequestBodySize = MAX_REQUEST_SIZE;
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = MAX_REQUEST_SIZE;
 });
 
 

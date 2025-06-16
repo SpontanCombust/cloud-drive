@@ -68,7 +68,8 @@ namespace CloudDrive.WebAPI.Controllers
 
                 var resp = new UpdateDirectoryResponse
                 {
-                    NewFileVersionInfo = result
+                    NewFileVersionInfo = result.ActiveFileVersion,
+                    Changed = result.Changed
                 };
 
                 return Ok(resp);
@@ -80,10 +81,10 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
         [HttpDelete("{fileId}", Name = "DeleteDirectory")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(DeleteDirectoryResponse), StatusCodes.Status200OK)]
         //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] Guid fileId)
+        public async Task<ActionResult<DeleteDirectoryResponse>> Delete([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -93,8 +94,15 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                await fileManagerService.DeleteDirectory(fileId);
-                return NoContent();
+                var result = await fileManagerService.DeleteDirectory(fileId);
+
+                var resp = new DeleteDirectoryResponse
+                {
+                    AffectedSubfiles = result.AffectedSubfiles,
+                    AffectedSubfileVersions = result.AffectedSubfileVersions
+                };
+
+                return Ok(resp);
             }
             catch (Exception ex)
             {

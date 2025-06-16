@@ -2,6 +2,7 @@
 using CloudDrive.Core.Mappers;
 using CloudDrive.Core.Services;
 using CloudDrive.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Entities = CloudDrive.Core.Domain.Entities;
 
 namespace CloudDrive.Infrastructure.Services
@@ -41,10 +42,28 @@ namespace CloudDrive.Infrastructure.Services
             return file?.ToDto();
         }
 
+        public async Task<FileDTO[]> GetInfoForManyFiles(Guid[] fileIds)
+        {
+            var files = await dbContext.Files.Where(f => fileIds.Contains(f.FileId)).ToArrayAsync();
+            return files.Select(f => f.ToDto()).ToArray();
+        }
+
         public async Task<bool> FileBelongsToUser(Guid fileId, Guid userId)
         {
             var info = await dbContext.Files.FindAsync(fileId);
             return info?.UserId == userId;
+        }
+
+        public async Task<bool> FileIsDirectory(Guid fileId)
+        {
+            var info = await dbContext.Files.FindAsync(fileId);
+            return info?.IsDir == true;
+        }
+
+        public async Task<bool> FileIsRegularFile(Guid fileId)
+        {
+            var info = await dbContext.Files.FindAsync(fileId);
+            return info?.IsDir == false;
         }
 
         public async Task<FileDTO> UpdateInfoForFile(Guid fileId, bool? deleted, Guid? activeFileVersionId)
@@ -58,6 +77,22 @@ namespace CloudDrive.Infrastructure.Services
             await dbContext.SaveChangesAsync();
 
             return tracked.ToDto();
+        }
+
+        public async Task UpdateInfoForManyFiles(FileDTO[] filesToUpdate)
+        {
+            foreach (var fileDto in filesToUpdate)
+            {
+                var tracked = await dbContext.Files.FindAsync(fileDto.FileId);
+                if (tracked != null)
+                {
+                    tracked.Deleted = fileDto.Deleted;
+                    tracked.ActiveFileVersionId = fileDto.ActiveFileVersionId;
+                    tracked.ModifiedDate = DateTime.Now.ToUniversalTime();
+                }
+            }
+
+            await dbContext.SaveChangesAsync();
         }
     }
 }

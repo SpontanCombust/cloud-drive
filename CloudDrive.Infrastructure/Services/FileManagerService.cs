@@ -99,7 +99,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 
@@ -135,7 +140,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 
@@ -170,7 +180,12 @@ namespace CloudDrive.Infrastructure.Services
             byte[]? fileContent = null;
             if (verInfo.ServerDirPath != null && verInfo.ServerFileName != null)
             {
-                string filePath = Path.Combine(verInfo.ServerDirPath, verInfo.ServerFileName);
+                string? filePath = verInfo.ServerFilePath();
+                if (filePath == null)
+                {
+                    return null;
+                }
+
                 fileContent = await fileSystemService.GetFile(filePath);
             }
 
@@ -184,7 +199,7 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
-        public async Task<FileVersionDTO> UpdateFile(Guid fileId, Stream fileStream, string clientFileName, string? clientDirPath)
+        public async Task<UpdateFileResultDTO> UpdateFile(Guid fileId, Stream fileStream, string clientFileName, string? clientDirPath)
         {
             if (fileStream == null)
             {
@@ -193,6 +208,7 @@ namespace CloudDrive.Infrastructure.Services
 
             //TODO create dedicated exception type
             var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File does not exist");
+            var oldFileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("Active file version not assigned");
 
             if (fileInfo.Deleted)
             {
@@ -204,36 +220,59 @@ namespace CloudDrive.Infrastructure.Services
             }
 
 
-            Guid newFileVersionId = Guid.NewGuid();
-            string newFileVersionServerPath = await fileSystemService.AllocatePathForFile(fileInfo.UserId, newFileVersionId);
-            string newFileVersionServerDirPath = Path.GetDirectoryName(newFileVersionServerPath)!;
-            string newFileVersionServerFileName = Path.GetFileName(newFileVersionServerPath);
-
             fileStream.Seek(0, SeekOrigin.Begin);
             string hash = await CalculateFileHash(fileStream);
 
             fileStream.Seek(0, SeekOrigin.Begin);
             long? fileSize = fileStream.Length;
 
-            fileStream.Seek(0, SeekOrigin.Begin);
-            await fileSystemService.CreateFile(newFileVersionServerPath, fileStream);
 
-            //FIXME make sure there are no local path conflicts between different active files
+            bool changed =
+                   clientFileName != oldFileVersionInfo.ClientFileName
+                || clientDirPath != oldFileVersionInfo.ClientDirPath
+                || hash != oldFileVersionInfo.Md5
+                || fileSize != oldFileVersionInfo.SizeBytes;
 
-            await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
 
-            var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
-                newFileVersionId,
-                fileId,
-                clientDirPath,
-                clientFileName,
-                newFileVersionServerDirPath,
-                newFileVersionServerFileName,
-                hash,
-                fileSize
-            );
+            if (changed)
+            {
+                Guid newFileVersionId = Guid.NewGuid();
+                string newFileVersionServerPath = await fileSystemService.AllocatePathForFile(fileInfo.UserId, newFileVersionId);
+                string newFileVersionServerDirPath = Path.GetDirectoryName(newFileVersionServerPath)!;
+                string newFileVersionServerFileName = Path.GetFileName(newFileVersionServerPath);
 
-            return fileVersionInfo;
+                fileStream.Seek(0, SeekOrigin.Begin);
+                await fileSystemService.CreateFile(newFileVersionServerPath, fileStream);
+
+                //FIXME make sure there are no local path conflicts between different active files
+
+                var newFileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
+                    newFileVersionId,
+                    fileId,
+                    clientDirPath,
+                    clientFileName,
+                    newFileVersionServerDirPath,
+                    newFileVersionServerFileName,
+                    hash,
+                    fileSize
+                );
+
+                await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
+
+                return new UpdateFileResultDTO
+                {
+                    Changed = true,
+                    ActiveFileVersion = newFileVersionInfo,
+                };
+            }
+            else
+            {
+                return new UpdateFileResultDTO
+                {
+                    Changed = false,
+                    ActiveFileVersion = oldFileVersionInfo,
+                };
+            }
         }
 
         public async Task DeleteFile(Guid fileId)
@@ -312,10 +351,11 @@ namespace CloudDrive.Infrastructure.Services
             return result;
         }
 
-        public async Task<FileVersionDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath)
+        public async Task<UpdateDirectoryResultDTO> UpdateDirectory(Guid fileId, string clientFileName, string? clientDirPath)
         {
             //TODO create dedicated exception type
             var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File does not exist");
+            var oldFileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("Active file version not assigned");
 
             if (fileInfo.Deleted)
             {
@@ -327,33 +367,76 @@ namespace CloudDrive.Infrastructure.Services
             }
 
 
-            Guid newFileVersionId = Guid.NewGuid();
+            bool changed =
+                clientFileName != oldFileVersionInfo.ClientFileName
+             || clientDirPath != oldFileVersionInfo.ClientDirPath; 
 
-            //FIXME make sure there are no local path conflicts between different active files
 
-            await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
+            if (changed)
+            {
+                Guid newFileVersionId = Guid.NewGuid();
 
-            var fileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
-                newFileVersionId,
-                fileId,
-                clientDirPath,
-                clientFileName,
-                null,
-                null,
-                null,
-                null
-            );
+                //FIXME make sure there are no local path conflicts between different active files
 
-            //FIXME dependant files not affected!
+                var newFileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
+                    newFileVersionId,
+                    fileId,
+                    clientDirPath,
+                    clientFileName,
+                    null,
+                    null,
+                    null,
+                    null
+                );
 
-            return fileVersionInfo;
+                await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
+
+                //FIXME dependant files not affected!
+
+                return new UpdateDirectoryResultDTO
+                {
+                    Changed = true,
+                    ActiveFileVersion = newFileVersionInfo,
+                };
+            }
+            else
+            {
+                return new UpdateDirectoryResultDTO
+                {
+                    Changed = false,
+                    ActiveFileVersion = oldFileVersionInfo,
+                };
+            }
         }
 
-        public async Task DeleteDirectory(Guid fileId)
+        public async Task<DeleteDirectoryResultDTO> DeleteDirectory(Guid fileId)
         {
+            if (!await fileInfoService.FileIsDirectory(fileId))
+            {
+                throw new ArgumentException("Requested file is not a directory and instead a regular file", nameof(fileId));
+            }
+
             await fileInfoService.UpdateInfoForFile(fileId, deleted: true, activeFileVersionId: null);
 
-            //FIXME dependant files not affected!
+
+            var subfileFileVersions = await fileVersionInfoService.GetInfoForAllActiveFileVersionsUnderDirectory(fileId, false);
+            var fileIds = subfileFileVersions.Select(fv => fv.FileId).ToArray();
+            var files = await fileInfoService.GetInfoForManyFiles(fileIds);
+
+            foreach (var f in files)
+            {
+                f.Deleted = true;
+            }
+
+            await fileInfoService.UpdateInfoForManyFiles(files);
+
+            var result = new DeleteDirectoryResultDTO
+            {
+                AffectedSubfiles = files,
+                AffectedSubfileVersions = subfileFileVersions
+            };
+
+            return result;
         }
 
         public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId)
