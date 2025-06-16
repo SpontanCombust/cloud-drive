@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,6 +46,27 @@ namespace CloudDrive.App.Views
             {
                 MessageBox.Show("Wystąpił błąd podczas ładowania aplikacji: " + ex.Message);
             }
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            // Cancel the close and minimize to tray instead
+            e.Cancel = true;
+            this.WindowState = WindowState.Minimized;
+            this.ShowInTaskbar = false;
+        }
+
+        private void SystemTrayIconRestore_Click(object sender, RoutedEventArgs e)
+        {
+            this.ShowInTaskbar = true;
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        }
+
+        private void SystemTrayIconClose_Click(object sender, RoutedEventArgs e)
+        {
+            SystemTrayIcon.Visibility = Visibility.Collapsed;
+            Application.Current.Shutdown();
         }
     }
 }
