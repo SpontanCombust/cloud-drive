@@ -3,10 +3,25 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:CloudDrive.App.Views"
         mc:Ignorable="d"
-        Title="CloudeDrive" Height="650" Width="500">
+        Title="CloudeDrive" Height="650" Width="500"
+        Closing="Window_Closing">
     <Grid>
         <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+
+        <!-- Taskbar icon (hidden by default) -->
+        <tb:TaskbarIcon x:Name="SystemTrayIcon" 
+                       
+                       ToolTipText="CloudDrive"
+                       Visibility="Visible">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Przywróć" Click="SystemTrayIconRestore_Click"/>
+                    <MenuItem Header="Zamknij" Click="SystemTrayIconClose_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
     </Grid>
 </Window>
