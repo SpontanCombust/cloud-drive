@@ -6,14 +6,15 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:CloudDrive.App.Views"
         mc:Ignorable="d"
-        Title="CloudeDrive" Height="650" Width="500"
+        Title="CloudDrive" Height="650" Width="500"
+        Icon="/Assets/cloud-drive.ico"
         Closing="Window_Closing">
     <Grid>
         <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
 
         <!-- Taskbar icon (hidden by default) -->
         <tb:TaskbarIcon x:Name="SystemTrayIcon" 
-                       
+                       IconSource="/Assets/cloud-drive.ico"
                        ToolTipText="CloudDrive"
                        Visibility="Visible">
             <tb:TaskbarIcon.ContextMenu>
