@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CloudDrive.App.Views.FileHistory"
         mc:Ignorable="d"
-        Title="CloudDrive - historia plików" Height="500" Width="1000">
+        Title="CloudDrive - historia plików" Height="500" Width="1000"
+        Icon="/Assets/cloud-drive.ico">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="30*"/>

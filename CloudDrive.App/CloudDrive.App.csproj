@@ -8,6 +8,16 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>false</UseWindowsForms>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\cloud-drive.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\cloud-drive.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
 	
   <ItemGroup>
     <OpenApiReference Include="OpenAPIs\swagger.json" CodeGenerator="NSwagCSharp" ClassName="WebAPIClient">
