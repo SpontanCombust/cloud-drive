@@ -125,7 +125,7 @@ namespace CloudDrive.App.ServicesImpl
 
                 foreach (var fsPath in foldersToUpload)
                 {
-                    syncTasks.Add(UploadNewFolderRecursivelyAsync(fsPath));
+                    syncTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
                 }
 
                 foreach (var fsPath in foldersToUpdate)
