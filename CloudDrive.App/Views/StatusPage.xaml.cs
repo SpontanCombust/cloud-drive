@@ -1,4 +1,10 @@
-﻿using System;
+﻿using CloudDrive.App.Model;
+using CloudDrive.App.Services;
+using CloudDrive.App.ServicesImpl;
+using CloudDrive.App.Utils;
+using CloudDrive.App.ViewModels;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,9 +18,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using CloudDrive.App.Model;
-using CloudDrive.App.Services;
-using CloudDrive.App.ServicesImpl;
 
 
 
@@ -28,6 +31,8 @@ namespace CloudDrive.App.Views
         private readonly IViewLocator _viewLocator;
         private readonly IFileSystemWatcher _fileSystemWatcher;
         private readonly IBenchmarkService _benchmarkService;
+
+        public readonly StatusPageViewModel ViewModel;
 
         public StatusPage(
             ILogRelayService logRelay,
@@ -44,12 +49,18 @@ namespace CloudDrive.App.Views
             _fileSystemWatcher = fileSystemWatcher;
             _benchmarkService = benchmarkService;
 
+            ViewModel = new StatusPageViewModel();
+            DataContext = ViewModel;
+
             InitializeComponent();
 
             logRelay.LogAdded += onLogAdded;
             foreach (var e in logHistory.GetHistory())
             {
-                LogTextBox.Text += e.Message + Environment.NewLine;
+                if (e.Level >= LogLevel.Information || ViewModel.EnableDebugLogs)
+                {
+                    LogTextBox.Text += e.Message + Environment.NewLine;
+                }
             }
 
             Task.Run(async () =>
@@ -81,7 +92,10 @@ namespace CloudDrive.App.Views
         {
             Dispatcher.Invoke(() =>
             {
-                LogTextBox.Text += e.Message + Environment.NewLine;
+                if (e.Level >= LogLevel.Information || ViewModel.EnableDebugLogs)
+                {
+                    LogTextBox.Text += e.Message + Environment.NewLine;
+                }
             });
         }
 
