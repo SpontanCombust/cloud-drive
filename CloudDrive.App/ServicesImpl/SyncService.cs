@@ -711,15 +711,12 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        public static class FileHashHelper
+        public static async Task<string> CalculateFileHash(string filePath)
         {
-            public static string CalculateFileHash(string filePath)
-            {
-                using var md5 = MD5.Create();
-                using var stream = File.OpenRead(filePath);
-                var hash = md5.ComputeHash(stream);
-                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-            }
+            using var stream = File.OpenRead(filePath);
+            var hashBytes = await MD5.HashDataAsync(stream);
+            var hashStr = Convert.ToHexString(hashBytes);
+            return hashStr;
         }
 
         public async Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
@@ -737,11 +734,11 @@ namespace CloudDrive.App.ServicesImpl
 
             if (!_fileVersionState.TryGetValue(path, out var version))
             {
-                throw new InvalidOperationException("Nie znaleziono wersji pliku na serwerze.");
+                throw new InvalidOperationException("Nie znaleziono wersji pliku z serwera.");
             }
 
             // Obliczanie lokalnego hash i porównanie
-            string localHash = FileHashHelper.CalculateFileHash(path.Full);
+            string localHash = await CalculateFileHash(path.Full);
             if (!string.IsNullOrEmpty(version.Md5) &&
                 localHash.Equals(version.Md5, StringComparison.OrdinalIgnoreCase))
             {
