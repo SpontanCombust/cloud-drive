@@ -713,7 +713,7 @@ namespace CloudDrive.App.ServicesImpl
             if (!string.IsNullOrEmpty(version.Md5) &&
                 localHash.Equals(version.Md5, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
+                _logger.LogDebug("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
                 return;
             }
 
