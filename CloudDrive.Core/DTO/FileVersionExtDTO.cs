@@ -56,5 +56,20 @@ namespace CloudDrive.Core.DTO
                 ClientFileName
             );
         }
+
+        public FileVersionDTO TrimExt()
+        {
+            return new FileVersionDTO
+            {
+                FileVersionId = this.FileVersionId,
+                FileId = this.FileId,
+                ClientFileName = this.ClientFileName,
+                ClientDirPath = this.ClientDirPath,
+                SizeBytes = this.SizeBytes,
+                VersionNr = this.VersionNr,
+                CreatedDate = this.FileVersionCreatedDate,
+                Md5 = this.Md5
+            };
+        }
     }
 }

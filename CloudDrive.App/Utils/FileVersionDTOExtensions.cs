@@ -25,5 +25,20 @@ namespace CloudDrive.App.Utils
                 fv.ClientFileName ?? string.Empty
             );
         }
+
+        public static FileVersionDTO TrimExt(this FileVersionExtDTO fve)
+        {
+            return new FileVersionDTO
+            {
+                FileVersionId = fve.FileVersionId,
+                FileId = fve.FileId,
+                ClientFileName = fve.ClientFileName,
+                ClientDirPath = fve.ClientDirPath,
+                SizeBytes = fve.SizeBytes,
+                VersionNr = fve.VersionNr,
+                CreatedDate = fve.FileVersionCreatedDate,
+                Md5 = fve.Md5
+            };
+        }
     }
 }

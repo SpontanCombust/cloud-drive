@@ -393,6 +393,34 @@ namespace CloudDrive.App.ServicesImpl
                 _fileVersionState.Remove(oldPath);
 
                 _logger.LogInformation("Zaktualizowano folder na serwerze: {OldPath} -> {NewPath}", oldPath.Full, newPath.Full);
+
+
+                var stateEntriesToRemove = _fileVersionState
+                    .Where(kv => kv.Key.Full.StartsWith(oldPath.Full + Path.DirectorySeparatorChar))
+                    .ToDictionary(kv => kv.Value.FileId, kv => kv.Key);
+
+                foreach (var newSubfileVersionExt in resp.NewSubfileVersionInfosExt)
+                {
+                    var newSubfilePath = new WatchedFileSystemPath(
+                        Path.Combine(newPath.WatchedFolder, newSubfileVersionExt.ClientFilePath()),
+                        newPath.WatchedFolder,
+                        newSubfileVersionExt.IsDir
+                    );
+
+                    if (stateEntriesToRemove.Remove(newSubfileVersionExt.FileId, out var oldSubfilePath))
+                    {
+                        _fileVersionState[newSubfilePath] = newSubfileVersionExt.TrimExt();
+                        _fileVersionState.Remove(oldSubfilePath);
+
+                        _logger.LogInformation("Zaktualizowano plik/folder na serwerze po zmianie nazwy folderu: {OldPath} -> {NewPath}", 
+                            oldSubfilePath.Full, newSubfilePath.Full);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Nie znaleziono lokalnie pliku/folderu, który powinien zostać zaktualizowany po zmianie nazwy folderu: {FileId}",
+                            newSubfileVersionExt.FileId);
+                    }
+                }
             }
             catch (ApiException ex)
             {
