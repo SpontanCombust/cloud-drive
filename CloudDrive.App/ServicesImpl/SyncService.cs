@@ -598,6 +598,7 @@ namespace CloudDrive.App.ServicesImpl
                         // przenosimy folder, więc trzeba usunąć informacje o starej ścieżce
                         _fileVersionState.Remove(oldFsPath);
 
+                        Directory.CreateDirectory(newFsPath.FullParentDir);
                         Directory.Move(oldFsPath.Full, newFullPath);
 
                         _logger.LogInformation("Przywrócono stan folderu z serwera: {OldPath} -> {NewPath}", oldFsPath.Full, newFsPath.Full);
@@ -630,6 +631,9 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
+
+
+
 
         //Pliki
 
