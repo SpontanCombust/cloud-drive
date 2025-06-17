@@ -1212,6 +1212,13 @@
           "newFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
           },
+          "newSubfileVersionInfosExt": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileVersionExtDTO"
+            },
+            "nullable": true
+          },
           "changed": {
             "type": "boolean"
           }
