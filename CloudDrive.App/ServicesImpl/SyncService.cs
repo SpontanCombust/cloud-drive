@@ -106,6 +106,12 @@ namespace CloudDrive.App.ServicesImpl
                     }
                 }
 
+
+                // zaczekaj aż faza 1 się zakończy
+                await Task.WhenAll(syncTasks);
+                syncTasks.Clear();
+
+
                 // Faza 2: Dodawanie i aktualizacja folderów
                 var foldersToDownload = syncedFolders.Except(localFolders);
                 var foldersToUpload = localFolders.Except(syncedFolders);
