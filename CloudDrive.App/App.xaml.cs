@@ -54,6 +54,7 @@ namespace CloudDrive.App
                 {
                     //builder.ClearProviders();
                     builder.AddProvider(new SimpleRelayLoggerProvider(logRelay));
+                    builder.SetMinimumLevel(LogLevel.Debug);
                 });
         }
 

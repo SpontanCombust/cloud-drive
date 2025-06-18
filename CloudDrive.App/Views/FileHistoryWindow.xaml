@@ -4,9 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CloudDrive.App.Views.FileHistory"
+        xmlns:vm="clr-namespace:CloudDrive.App.ViewModels"
         mc:Ignorable="d"
         Title="CloudDrive - historia plików" Height="500" Width="1000"
-        Icon="/Assets/cloud-drive.ico">
+        Icon="/Assets/cloud-drive.ico"
+        d:DataContext="{d:DesignInstance Type=vm:FileHistoryWindowViewModel}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="30*"/>
@@ -21,18 +23,18 @@
             </Grid.RowDefinitions>
             
             <!-- File Tree View -->
-            <TreeView x:Name="FileIndexTreeView" 
+            <TreeView x:Name="FileIndexTreeView" DataContext="{Binding Path=FileIndexTree}"
                       Grid.Row="0" 
                       SelectedItemChanged="FileIndexTreeView_SelectedItemChanged">
                 <TreeView.Resources>
                     <!-- Template for all file items -->
-                    <HierarchicalDataTemplate DataType="{x:Type local:FileIndexTreeItemViewModel}" 
-                                              ItemsSource="{Binding Subindices}">
-                        <TextBlock Text="{Binding FileName}">
+                    <HierarchicalDataTemplate DataType="{x:Type vm:FileIndexTreeItemViewModel}" 
+                                              ItemsSource="{Binding Path=Subindices}">
+                        <TextBlock Text="{Binding Path=FileName}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                        <DataTrigger Binding="{Binding Path=IsValid}" Value="False">
                                             <Setter Property="Foreground" Value="Gray"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -43,7 +45,7 @@
                 </TreeView.Resources>
 
                 <!-- Active Files Branch -->
-                <TreeViewItem ItemsSource="{Binding Active}" IsExpanded="True">
+                <TreeViewItem ItemsSource="{Binding Path=Active}" IsExpanded="True">
                     <TreeViewItem.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="Pliki" FontWeight="Bold"/>
@@ -55,7 +57,7 @@
                 <Rectangle Height="0" Margin="0,5,0,5"/>
 
                 <!-- Archived Files Branch -->
-                <TreeViewItem ItemsSource="{Binding Archived}">
+                <TreeViewItem ItemsSource="{Binding Path=Archived}">
                     <TreeViewItem.HeaderTemplate>
                         <DataTemplate>
                             <TextBlock Text="Archiwum" FontWeight="Bold" Foreground="Gray"/>
@@ -85,12 +87,12 @@
             
             <ListView x:Name="FileVersionListView" 
                       Grid.Row="0"
-                      ItemsSource="{Binding FileVersionItems}"
-                      SelectedItem="{Binding SelectedFileVersionItem}">
+                      ItemsSource="{Binding Path=FileVersionItems}"
+                      SelectedItem="{Binding Path=SelectedFileVersionItem}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Active}" Value="True">
+                            <DataTrigger Binding="{Binding Path=Active}" Value="True">
                                 <Setter Property="Background" Value="#E8F5E9"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -101,35 +103,35 @@
                         <GridViewColumn Header="Wersja" Width="60">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding VersionNr}"/>
+                                    <TextBlock Text="{Binding Path=VersionNr}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="Ścieżka" Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding ClientPath}"/>
+                                    <TextBlock Text="{Binding Path=ClientPath}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="Rozmiar (B)" Width="80">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding SizeBytes}"/>
+                                    <TextBlock Text="{Binding Path=SizeBytes}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="Data utworzenia" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding CreatedDate}"/>
+                                    <TextBlock Text="{Binding Path=CreatedDate}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="MD5" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Md5}"/>
+                                    <TextBlock Text="{Binding Path=Md5}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -140,7 +142,7 @@
             <Button Grid.Row="1" 
                     Content="Przywróć wersję" 
                     Click="OnApplyVersionClick"
-                    IsEnabled="{Binding IsRestorableFileVersionItemSelected}"
+                    IsEnabled="{Binding Path=IsRestorableFileVersionItemSelected}"
                     Margin="10"
                     Padding="20,5"
                     HorizontalAlignment="Right"/>

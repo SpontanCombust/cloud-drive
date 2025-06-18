@@ -1,6 +1,7 @@
 ﻿using CloudDrive.Core.Domain.Entities;
 using CloudDrive.Core.DTO;
 using CloudDrive.Core.Services;
+using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -9,17 +10,20 @@ namespace CloudDrive.Infrastructure.Services
 {
     public class FileManagerService : IFileManagerService
     {
+        private readonly ILogger<FileManagerService> logger;
         private readonly IUserService userService;
         private readonly IFileInfoService fileInfoService;
         private readonly IFileVersionInfoService fileVersionInfoService;
         private readonly IFileSystemService fileSystemService;
 
         public FileManagerService(
+            ILogger<FileManagerService> logger,
             IUserService userService, 
             IFileInfoService fileInfoService, 
             IFileVersionInfoService fileVersionInfoService, 
             IFileSystemService fileSystemService)
         {
+            this.logger = logger;
             this.userService = userService;
             this.fileInfoService = fileInfoService;
             this.fileVersionInfoService = fileVersionInfoService;
@@ -378,6 +382,8 @@ namespace CloudDrive.Infrastructure.Services
 
                 //FIXME make sure there are no local path conflicts between different active files
 
+                var subfileVersionInfos = await fileVersionInfoService.GetInfoForAllActiveFileVersionsUnderDirectory(fileId, false);
+
                 var newFileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                     newFileVersionId,
                     fileId,
@@ -391,12 +397,37 @@ namespace CloudDrive.Infrastructure.Services
 
                 await fileInfoService.UpdateInfoForFile(fileId, null, newFileVersionId);
 
-                //FIXME dependant files not affected!
+
+                // updating paths of subfiles
+
+                var newSubfileVersionInfosExt = new List<FileVersionExtDTO>(subfileVersionInfos.Length);
+
+                foreach (var fv in subfileVersionInfos)
+                {
+                    var newSubfileVersionId = Guid.NewGuid();
+                    var newSubfileVersionClientDirPath = UpdatedDirectorySubfileClientDirPath(fv, oldFileVersionInfo, newFileVersionInfo);
+
+                    var newSubfileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
+                        newSubfileVersionId,
+                        fv.FileId,
+                        newSubfileVersionClientDirPath,
+                        fv.ClientFileName,
+                        fv.ServerDirPath,
+                        fv.ServerFileName,
+                        fv.Md5,
+                        fv.SizeBytes
+                    );
+
+                    var subfileInfo = await fileInfoService.UpdateInfoForFile(newSubfileVersionInfo.FileId, null, newSubfileVersionInfo.FileVersionId);
+
+                    newSubfileVersionInfosExt.Add(new FileVersionExtDTO(subfileInfo, newSubfileVersionInfo));
+                }
 
                 return new UpdateDirectoryResultDTO
                 {
                     Changed = true,
                     ActiveFileVersion = newFileVersionInfo,
+                    NewSubfileVersionsExt = newSubfileVersionInfosExt.ToArray(),
                 };
             }
             else
@@ -405,9 +436,30 @@ namespace CloudDrive.Infrastructure.Services
                 {
                     Changed = false,
                     ActiveFileVersion = oldFileVersionInfo,
+                    NewSubfileVersionsExt = []
                 };
             }
         }
+
+        private string? UpdatedDirectorySubfileClientDirPath(FileVersionDTO prevSubfileVersion, FileVersionDTO prevAncestorDirFileVersion, FileVersionDTO updatedAncestorDirFileVersion)
+        {
+            string prevAncestorPath = prevAncestorDirFileVersion.ClientFilePath();
+
+            if (prevSubfileVersion.ClientDirPath == null || !prevSubfileVersion.ClientDirPath.StartsWith(prevAncestorPath))
+            {
+                logger.LogError("Previous subfile version's ({SubfileVersionId}) parent directory path does not contain the previous ancestor directory path: {SubfileParentDirPath} does not contain {AncestorDirPath}",
+                    prevSubfileVersion.FileVersionId, prevSubfileVersion.ClientDirPath, prevAncestorPath);
+
+                return prevSubfileVersion.ClientDirPath;
+            }
+
+            string newAncestorPath = updatedAncestorDirFileVersion.ClientFilePath();
+            string prevSubfileParentDirPathAfterAncestor = prevSubfileVersion.ClientDirPath.Substring(prevAncestorPath.Length);
+            string newSubfileParentDirPath = string.Concat(newAncestorPath, prevSubfileParentDirPathAfterAncestor);
+
+            return newSubfileParentDirPath;
+        }
+
 
         public async Task<DeleteDirectoryResultDTO> DeleteDirectory(Guid fileId)
         {

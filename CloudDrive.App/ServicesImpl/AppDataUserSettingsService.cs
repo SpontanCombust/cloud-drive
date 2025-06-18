@@ -6,8 +6,19 @@ namespace CloudDrive.App.ServicesImpl
 {
     internal class UserSettings
     {
-        public Uri? ServerUrl { get; set; }
-        public string? WatchedFolderPath { get; set; }
+        public Uri? ServerUrl { get; set; } = null;
+        public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
+
+
+        private static string DefaultWatchedFolderPath
+        {
+            get
+            {
+                var docsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "CloudDrive");
+                Directory.CreateDirectory(docsPath); // Ensure the directory exists
+                return docsPath;
+            }
+        }
     }
 
     public class AppDataUserSettingsService : IUserSettingsService
@@ -24,7 +35,7 @@ namespace CloudDrive.App.ServicesImpl
             get => _userSettings.ServerUrl; 
             set => _userSettings.ServerUrl = value; 
         }
-        public string? WatchedFolderPath {
+        public string WatchedFolderPath {
             get => _userSettings.WatchedFolderPath; 
             set => _userSettings.WatchedFolderPath = value; 
         }
@@ -47,11 +58,18 @@ namespace CloudDrive.App.ServicesImpl
             if (File.Exists(SettingsFilePath))
             {
                 string json = File.ReadAllText(SettingsFilePath);
-                var savedSettings = JsonConvert.DeserializeObject<UserSettings>(json);
-
-                if (savedSettings != null)
+                if (string.IsNullOrWhiteSpace(json))
                 {
-                    _userSettings = savedSettings;
+                    _userSettings = new UserSettings(); // Reset to default if file is empty
+                }
+                else
+                {
+                    var savedSettings = JsonConvert.DeserializeObject<UserSettings>(json);
+
+                    if (savedSettings != null)
+                    {
+                        _userSettings = savedSettings;
+                    }
                 }
             }
 

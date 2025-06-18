@@ -3,6 +3,7 @@
     public class UpdateDirectoryResultDTO
     {
         public required FileVersionDTO ActiveFileVersion { get; set; }
+        public required FileVersionExtDTO[] NewSubfileVersionsExt { get; set; }
         public required bool Changed { get; set; }
     }
 }

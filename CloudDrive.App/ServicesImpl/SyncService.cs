@@ -106,6 +106,12 @@ namespace CloudDrive.App.ServicesImpl
                     }
                 }
 
+
+                // zaczekaj aż faza 1 się zakończy
+                await Task.WhenAll(syncTasks);
+                syncTasks.Clear();
+
+
                 // Faza 2: Dodawanie i aktualizacja folderów
                 var foldersToDownload = syncedFolders.Except(localFolders);
                 var foldersToUpload = localFolders.Except(syncedFolders);
@@ -119,7 +125,7 @@ namespace CloudDrive.App.ServicesImpl
 
                 foreach (var fsPath in foldersToUpload)
                 {
-                    syncTasks.Add(UploadNewFolderRecursivelyAsync(fsPath));
+                    syncTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
                 }
 
                 foreach (var fsPath in foldersToUpdate)
@@ -387,6 +393,34 @@ namespace CloudDrive.App.ServicesImpl
                 _fileVersionState.Remove(oldPath);
 
                 _logger.LogInformation("Zaktualizowano folder na serwerze: {OldPath} -> {NewPath}", oldPath.Full, newPath.Full);
+
+
+                var stateEntriesToRemove = _fileVersionState
+                    .Where(kv => kv.Key.Full.StartsWith(oldPath.Full + Path.DirectorySeparatorChar))
+                    .ToDictionary(kv => kv.Value.FileId, kv => kv.Key);
+
+                foreach (var newSubfileVersionExt in resp.NewSubfileVersionInfosExt)
+                {
+                    var newSubfilePath = new WatchedFileSystemPath(
+                        Path.Combine(newPath.WatchedFolder, newSubfileVersionExt.ClientFilePath()),
+                        newPath.WatchedFolder,
+                        newSubfileVersionExt.File.IsDir
+                    );
+
+                    if (stateEntriesToRemove.Remove(newSubfileVersionExt.File.FileId, out var oldSubfilePath))
+                    {
+                        _fileVersionState[newSubfilePath] = newSubfileVersionExt.TrimExt();
+                        _fileVersionState.Remove(oldSubfilePath);
+
+                        _logger.LogInformation("Zaktualizowano plik/folder na serwerze po zmianie nazwy folderu: {OldPath} -> {NewPath}", 
+                            oldSubfilePath.Full, newSubfilePath.Full);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Nie znaleziono lokalnie pliku/folderu, który powinien zostać zaktualizowany po zmianie nazwy folderu: {FileId}",
+                            newSubfileVersionExt.File.FileId);
+                    }
+                }
             }
             catch (ApiException ex)
             {
@@ -564,6 +598,7 @@ namespace CloudDrive.App.ServicesImpl
                         // przenosimy folder, więc trzeba usunąć informacje o starej ścieżce
                         _fileVersionState.Remove(oldFsPath);
 
+                        Directory.CreateDirectory(newFsPath.FullParentDir);
                         Directory.Move(oldFsPath.Full, newFullPath);
 
                         _logger.LogInformation("Przywrócono stan folderu z serwera: {OldPath} -> {NewPath}", oldFsPath.Full, newFsPath.Full);
@@ -596,6 +631,9 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
+
+
+
 
         //Pliki
 
@@ -673,15 +711,12 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        public static class FileHashHelper
+        public static async Task<string> CalculateFileHash(string filePath)
         {
-            public static string CalculateFileHash(string filePath)
-            {
-                using var md5 = MD5.Create();
-                using var stream = File.OpenRead(filePath);
-                var hash = md5.ComputeHash(stream);
-                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-            }
+            using var stream = File.OpenRead(filePath);
+            var hashBytes = await MD5.HashDataAsync(stream);
+            var hashStr = Convert.ToHexString(hashBytes);
+            return hashStr;
         }
 
         public async Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
@@ -699,15 +734,15 @@ namespace CloudDrive.App.ServicesImpl
 
             if (!_fileVersionState.TryGetValue(path, out var version))
             {
-                throw new InvalidOperationException("Nie znaleziono wersji pliku na serwerze.");
+                throw new InvalidOperationException("Nie znaleziono wersji pliku z serwera.");
             }
 
             // Obliczanie lokalnego hash i porównanie
-            string localHash = FileHashHelper.CalculateFileHash(path.Full);
+            string localHash = await CalculateFileHash(path.Full);
             if (!string.IsNullOrEmpty(version.Md5) &&
                 localHash.Equals(version.Md5, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
+                _logger.LogDebug("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
                 return;
             }
 
