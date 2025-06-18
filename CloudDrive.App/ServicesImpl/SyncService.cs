@@ -404,10 +404,10 @@ namespace CloudDrive.App.ServicesImpl
                     var newSubfilePath = new WatchedFileSystemPath(
                         Path.Combine(newPath.WatchedFolder, newSubfileVersionExt.ClientFilePath()),
                         newPath.WatchedFolder,
-                        newSubfileVersionExt.IsDir
+                        newSubfileVersionExt.File.IsDir
                     );
 
-                    if (stateEntriesToRemove.Remove(newSubfileVersionExt.FileId, out var oldSubfilePath))
+                    if (stateEntriesToRemove.Remove(newSubfileVersionExt.File.FileId, out var oldSubfilePath))
                     {
                         _fileVersionState[newSubfilePath] = newSubfileVersionExt.TrimExt();
                         _fileVersionState.Remove(oldSubfilePath);
@@ -418,7 +418,7 @@ namespace CloudDrive.App.ServicesImpl
                     else
                     {
                         _logger.LogWarning("Nie znaleziono lokalnie pliku/folderu, który powinien zostać zaktualizowany po zmianie nazwy folderu: {FileId}",
-                            newSubfileVersionExt.FileId);
+                            newSubfileVersionExt.File.FileId);
                     }
                 }
             }
