@@ -156,9 +156,10 @@ namespace CloudDrive.App.Views
             }
         }
 
-        private void FileVersionHistoryButton_Click(object sender, RoutedEventArgs e)
+        private async void FileVersionHistoryButton_Click(object sender, RoutedEventArgs e)
         {
             var fileHistoryWindow = _viewLocator.FileHistoryWindow();
+            await fileHistoryWindow.FillFileIndexTree();
             fileHistoryWindow.Show();
         }
     }

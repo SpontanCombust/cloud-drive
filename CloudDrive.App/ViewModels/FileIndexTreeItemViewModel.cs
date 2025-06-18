@@ -1,46 +1,31 @@
 ﻿using CloudDrive.App.Utils;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 using System.IO;
 
-namespace CloudDrive.App.Views.FileHistory
+namespace CloudDrive.App.ViewModels
 {
-    public class FileIndexTreeItemViewModel
+    public partial class FileIndexTreeItemViewModel : ObservableObject
     {
-        public Guid FileId { get; set; }
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsValid))]
+        private Guid fileId;
+
         /// <summary>
         /// Path relative to the watched folder
         /// </summary>
-        public string FilePath { get; set; }
-        public bool Deleted { get; set; }
-        public bool IsDir { get; set; }
-        public ObservableCollection<FileIndexTreeItemViewModel> Subindices { get; } = new();
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FileName))]
+        private string filePath;
 
-        public static Comparison<FileIndexTreeItemViewModel> FILE_NAME_COMPARISON = (x, y) => string.Compare(x.FileName, y.FileName, StringComparison.OrdinalIgnoreCase);
+        [ObservableProperty]
+        private bool deleted;
 
+        [ObservableProperty]
+        private bool isDir;
 
-        public FileIndexTreeItemViewModel(string filePath, bool isDir, bool deleted, Guid fileId)
-        {
-            FileId = fileId;
-            FilePath = filePath;
-            IsDir = isDir;
-            Deleted = deleted;
-        }
-
-        public FileIndexTreeItemViewModel(string filePath, bool isDir, bool deleted)
-        {
-            FileId = Guid.Empty;
-            FilePath = filePath;
-            IsDir = isDir;
-            Deleted = deleted;
-        }
-
-        public FileIndexTreeItemViewModel(string filePath, bool isDir)
-        {
-            FileId = Guid.Empty;
-            FilePath = filePath;
-            IsDir = isDir;
-            Deleted = false;
-        }
+        [ObservableProperty]
+        private ObservableCollection<FileIndexTreeItemViewModel> subindices;
 
 
         public string FileName => Path.GetFileName(FilePath) ?? "";
@@ -48,20 +33,51 @@ namespace CloudDrive.App.Views.FileHistory
         public bool IsValid => FileId != Guid.Empty;
 
 
+        public static readonly Comparison<FileIndexTreeItemViewModel> FILE_NAME_COMPARISON = (x, y) => string.Compare(x.FileName, y.FileName, StringComparison.OrdinalIgnoreCase);
+
+
+        public FileIndexTreeItemViewModel(string filePath, bool isDir, bool deleted, Guid fileId)
+        {
+            this.fileId = fileId;
+            this.filePath = filePath;
+            this.isDir = isDir;
+            this.deleted = deleted;
+            this.subindices = new();
+        }
+
+        public FileIndexTreeItemViewModel(string filePath, bool isDir, bool deleted)
+        {
+            this.fileId = Guid.Empty;
+            this.filePath = filePath;
+            this.isDir = isDir;
+            this.deleted = deleted;
+            this.subindices = new();
+        }
+
+        public FileIndexTreeItemViewModel(string filePath, bool isDir)
+        {
+            this.fileId = Guid.Empty;
+            this.filePath = filePath;
+            this.isDir = isDir;
+            this.deleted = false;
+            this.subindices = new();
+        }
+
+
         /// <summary>
         /// Get index for the first component in this index's path. It will not contain a valid FileId.
         /// </summary>
         public FileIndexTreeItemViewModel ExtractRootIndex()
         {
-            var pathComponents = this.FilePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var pathComponents = FilePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             if (pathComponents.Length > 1)
             {
                 var rootPath = pathComponents[0];
-                return new FileIndexTreeItemViewModel(rootPath, true, this.Deleted);
+                return new FileIndexTreeItemViewModel(rootPath, true, Deleted);
             }
             else
             {
-                return new FileIndexTreeItemViewModel(this.FilePath, this.IsDir, this.Deleted);
+                return new FileIndexTreeItemViewModel(FilePath, IsDir, Deleted);
             }            
         }
 

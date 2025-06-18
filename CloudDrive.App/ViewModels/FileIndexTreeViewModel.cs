@@ -1,12 +1,23 @@
 ﻿using CloudDrive.App.Utils;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 
-namespace CloudDrive.App.Views.FileHistory
+namespace CloudDrive.App.ViewModels
 {
-    public class FileIndexTreeViewModel
+    public partial class FileIndexTreeViewModel : ObservableObject
     {
-        public ObservableCollection<FileIndexTreeItemViewModel> Active { get; } = new();
-        public ObservableCollection<FileIndexTreeItemViewModel> Archived { get; } = new();
+        [ObservableProperty]
+        private ObservableCollection<FileIndexTreeItemViewModel> active;
+
+        [ObservableProperty]
+        private ObservableCollection<FileIndexTreeItemViewModel> archived;
+
+
+        public FileIndexTreeViewModel()
+        {
+            this.active = new();
+            this.archived = new();
+        }
 
 
         public void Clear()
