@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using CloudDrive.App.Services;
+using CloudDrive.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 
@@ -25,12 +26,17 @@ namespace CloudDrive.App.Views
         private readonly IUserSettingsService _userSettingsService;
         private readonly IViewLocator _viewLocator;
 
+        private readonly SettingsPageViewModel ViewModel;
+
         public SettingsPage(IUserSettingsService userSettingsService, IViewLocator viewLocator)
         {
-            InitializeComponent();
-
             _userSettingsService = userSettingsService;
             _viewLocator = viewLocator;
+
+            InitializeComponent();
+
+            ViewModel = new SettingsPageViewModel();
+            DataContext = ViewModel;
 
             LoadSettings();
         }
@@ -41,8 +47,8 @@ namespace CloudDrive.App.Views
             var folderDialog = new Microsoft.Win32.OpenFolderDialog();
             if (folderDialog.ShowDialog() ?? false)
             {
-                FolderPathTextBox.Text = folderDialog.FolderName;
-                FolderPathErrorTextBlock.Text = String.Empty;
+                ViewModel.FolderPath = folderDialog.FolderName;
+                ViewModel.FolderPathError = string.Empty;
             }
         }
 
@@ -79,8 +85,8 @@ namespace CloudDrive.App.Views
             {
                 await _userSettingsService.LoadSettingsAsync();
 
-                ServerUrlTextBox.Text = _userSettingsService.ServerUrl?.ToString() ?? "";
-                FolderPathTextBox.Text = _userSettingsService.WatchedFolderPath?.ToString() ?? "";
+                ViewModel.ServerUrl = _userSettingsService.ServerUrl?.ToString() ?? "";
+                ViewModel.FolderPath = _userSettingsService.WatchedFolderPath?.ToString() ?? "";
             }
             catch (Exception ex)
             {
@@ -92,28 +98,26 @@ namespace CloudDrive.App.Views
         {
             try
             {
-                var url = new Uri(ServerUrlTextBox.Text);
+                var url = new Uri(ViewModel.ServerUrl);
                 _userSettingsService.ServerUrl = url;
                 return true;
             }
             catch (Exception ex)
             {
-                ServerUrlErrorTextBlock.Text = ex.Message;
+                ViewModel.ServerUrlError = ex.Message;
                 return false;
             }
         }
 
         private bool ValidateAndSetFolderPath()
         {
-            string folderPath = FolderPathTextBox.Text;
-
-            if (!Directory.Exists(folderPath))
+            if (!Directory.Exists(ViewModel.FolderPath))
             {
-                FolderPathErrorTextBlock.Text = "Folder nie istnieje";
+                ViewModel.FolderPathError = "Folder nie istnieje";
                 return false;
             }
 
-            _userSettingsService.WatchedFolderPath = folderPath;
+            _userSettingsService.WatchedFolderPath = ViewModel.FolderPath;
             return true;
         }
     }
