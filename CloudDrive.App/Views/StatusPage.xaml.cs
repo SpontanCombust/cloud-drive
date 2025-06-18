@@ -57,9 +57,9 @@ namespace CloudDrive.App.Views
             logRelay.LogAdded += onLogAdded;
             foreach (var e in logHistory.GetHistory())
             {
-                if (e.Level >= LogLevel.Information || ViewModel.EnableDebugLogs)
+                if (e.Level >= LogLevel.Information || ViewModel.DebugLogsEnabled)
                 {
-                    LogTextBox.Text += e.Message + Environment.NewLine;
+                    ViewModel.Logs += e.Message + Environment.NewLine;
                 }
             }
 
@@ -92,9 +92,9 @@ namespace CloudDrive.App.Views
         {
             Dispatcher.Invoke(() =>
             {
-                if (e.Level >= LogLevel.Information || ViewModel.EnableDebugLogs)
+                if (e.Level >= LogLevel.Information || ViewModel.DebugLogsEnabled)
                 {
-                    LogTextBox.Text += e.Message + Environment.NewLine;
+                    ViewModel.Logs += e.Message + Environment.NewLine;
                 }
             });
         }
@@ -103,11 +103,8 @@ namespace CloudDrive.App.Views
         {
             try
             {
-                FullSyncButton.IsEnabled = false;
-                LoadingSpinner.Visibility = Visibility.Visible;
-
-                await _syncService.SynchronizeAllFilesAsync();  // ważne: `await`!
-
+                ViewModel.SyncIsInProgress = true;
+                await _syncService.SynchronizeAllFilesAsync();
             }
             catch (Exception ex)
             {
@@ -115,8 +112,7 @@ namespace CloudDrive.App.Views
             }
             finally
             {
-                FullSyncButton.IsEnabled = true;
-                LoadingSpinner.Visibility = Visibility.Collapsed;
+                ViewModel.SyncIsInProgress = false;
             }
         }
 
@@ -130,6 +126,7 @@ namespace CloudDrive.App.Views
             {
                 MessageBox.Show("Błąd zatrzymywania obserwatora: " + ex.Message);
             }
+
             var loginPage = _viewLocator.LoginPage();
 
             if (NavigationService != null)
@@ -144,7 +141,7 @@ namespace CloudDrive.App.Views
 
         private void clear_Click(object sender, RoutedEventArgs e)
         {
-            LogTextBox.Clear();
+            ViewModel.Logs = string.Empty; 
         }
 
         private void ViewBenchmarkButton_Click(object sender, RoutedEventArgs e)
@@ -163,18 +160,6 @@ namespace CloudDrive.App.Views
         {
             var fileHistoryWindow = _viewLocator.FileHistoryWindow();
             fileHistoryWindow.Show();
-        }
-
-        private void WrapTextCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (WrapTextCheckBox.IsChecked == true)
-            {
-                LogTextBox.TextWrapping = TextWrapping.Wrap;
-            }
-            else
-            {
-                LogTextBox.TextWrapping = TextWrapping.NoWrap;
-            }
         }
     }
 }
