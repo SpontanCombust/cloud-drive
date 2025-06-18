@@ -24,7 +24,7 @@ namespace CloudDrive.App.ServicesImpl
 
             if (!Directory.Exists(_watchedFolder))
             {
-                throw new DirectoryNotFoundException($"Folder {_watchedFolder} nie istnieje.");
+                throw new DirectoryNotFoundException($"Obserwowany folder {_watchedFolder} nie istnieje.");
             }
 
             _watcher = new FileSystemWatcher(_watchedFolder)
