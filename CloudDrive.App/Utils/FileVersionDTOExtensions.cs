@@ -18,27 +18,14 @@ namespace CloudDrive.App.Utils
         /// <summary>
         /// Relative path to this file or directory on the client side
         /// </summary>
-        public static string ClientFilePath(this FileVersionExtDTO fv)
+        public static string ClientFilePath(this FileVersionExtDTO fve)
         {
-            return Path.Combine(
-                fv.ClientDirPath ?? string.Empty,
-                fv.ClientFileName ?? string.Empty
-            );
+            return fve.FileVersion.ClientFilePath();
         }
 
         public static FileVersionDTO TrimExt(this FileVersionExtDTO fve)
         {
-            return new FileVersionDTO
-            {
-                FileVersionId = fve.FileVersionId,
-                FileId = fve.FileId,
-                ClientFileName = fve.ClientFileName,
-                ClientDirPath = fve.ClientDirPath,
-                SizeBytes = fve.SizeBytes,
-                VersionNr = fve.VersionNr,
-                CreatedDate = fve.FileVersionCreatedDate,
-                Md5 = fve.Md5
-            };
+            return fve.FileVersion;
         }
     }
 }

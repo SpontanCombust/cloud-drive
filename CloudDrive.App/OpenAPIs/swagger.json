@@ -1062,57 +1062,11 @@
       "FileVersionExtDTO": {
         "type": "object",
         "properties": {
-          "fileId": {
-            "type": "string",
-            "format": "uuid"
+          "file": {
+            "$ref": "#/components/schemas/FileDTO"
           },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "isDir": {
-            "type": "boolean"
-          },
-          "deleted": {
-            "type": "boolean"
-          },
-          "fileCreatedDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "fileModifiedDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "fileVersionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "clientDirPath": {
-            "type": "string",
-            "nullable": true
-          },
-          "clientFileName": {
-            "type": "string",
-            "nullable": true
-          },
-          "versionNr": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "md5": {
-            "type": "string",
-            "nullable": true
-          },
-          "sizeBytes": {
-            "type": "integer",
-            "format": "int64",
-            "nullable": true
-          },
-          "fileVersionCreatedDate": {
-            "type": "string",
-            "format": "date-time"
+          "fileVersion": {
+            "$ref": "#/components/schemas/FileVersionDTO"
           }
         },
         "additionalProperties": false

@@ -144,7 +144,7 @@ namespace CloudDrive.App.Views.FileHistory
 
                 foreach (var fv in fvs)
                 {
-                    var treeItem = new FileIndexTreeItemViewModel(fv.ClientFilePath(), fv.IsDir, fv.Deleted, fv.FileId);
+                    var treeItem = new FileIndexTreeItemViewModel(fv.ClientFilePath(), fv.File.IsDir, fv.File.Deleted, fv.File.FileId);
                     ViewModel.FileIndexTree.InsertIndex(treeItem);
                 }
             }
