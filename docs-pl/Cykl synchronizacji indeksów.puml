@@ -1,0 +1,104 @@
+@startuml index-lifecycle
+
+hide empty description
+
+!procedure MainState($name, $label, $ul, $al, $az)
+    state "$label" as $name {
+        state "UL" as $name##PL #$ul
+        state "AL" as $name##AL #$al
+        state "AZ" as $name##AZ #$az
+    }
+!endprocedure
+
+!procedure TransitionState($name, $label, $ul, $al, $az)
+    state "$label" as $name ##[dotted] {
+        state "UL" as $name##PL #$ul
+        state "AL" as $name##AL #$al
+        state "AZ" as $name##AZ #$az
+    }
+!endprocedure
+
+
+MainState(Init, "Stan zerowy", white, white, white)
+
+note right of Init
+    UL - utrwalony/zatwierdzony indeks lokalny
+    AL - aktualny indeks lokalny
+    AZ - aktualny indeks zdalny
+end note
+
+
+MainState(FullSync, "Pełna zgodność", lightgray, lightgray, lightgray)
+
+
+state "Dodanie pliku" as NewFile ##[dotted] {
+    MainState(NewLocal, "Nowy plik lokalny", white, green, white)
+    Init --> NewLocal : Lokalne utworzenie pliku
+
+    TransitionState(NewLocalUploaded, "Zgodność klient-serwer", white, lightgray, green)
+    NewLocal --> NewLocalUploaded : Wysłanie nowego pliku lokalnego
+
+    TransitionState(NewLocalPersisted, "Utrwalony nowy plik", green, lightgray, lightgray)
+    NewLocalUploaded --> NewLocalPersisted : Utrwalenie stanu lokalnego
+
+    NewLocalPersisted --> FullSync
+
+
+    MainState(NewRemote, "Nowy plik w chmurze", white, white, green)
+    Init --> NewRemote : Wykrycie nowego pliku w chmurze
+
+    TransitionState(NewRemoteDownloaded, "Zgodność klient-serwer", white, green, lightgray)
+    NewRemote --> NewRemoteDownloaded : Pobranie nowego pliku z chmury
+
+    NewRemoteDownloaded --> NewLocalPersisted : Utrwalenie stanu lokalnego
+}
+
+state "Modyfikacja pliku" as ModifiedFile ##[dotted] {
+    MainState(ModifiedLocal, "Zmodyfikowany plik lokalny", lightgray, yellow, lightgray)
+    FullSync -down-> ModifiedLocal : Lokalna modyfikacja pliku
+
+    TransitionState(ModifiedLocalUploaded, "Zgodność klient-serwer", lightgray, lightgray, yellow)
+    ModifiedLocal --> ModifiedLocalUploaded : Wysłanie zmodyfikowanego pliku lokalnego
+
+    TransitionState(ModifiedLocalPersisted, "Utrwalony zmodyfikowany plik", yellow, lightgray, lightgray)
+    ModifiedLocalUploaded --> ModifiedLocalPersisted : Utrwalenie stanu lokalnego
+
+    ModifiedLocalPersisted -up-> FullSync
+
+
+    MainState(ModifiedRemote, "Zmodyfikowany plik w chmurze", lightgray, lightgray, yellow)
+    FullSync -down-> ModifiedRemote : Wykrycie modyfikacji pliku w chmurze
+
+    TransitionState(ModifiedRemoteDownloaded, "Zgodność klient-serwer", lightgray, yellow, lightgray)
+    ModifiedRemote --> ModifiedRemoteDownloaded : Pobranie zmodyfikowanego pliku z chmury
+
+    TransitionState(ModifiedRemotePersisted, "Utrwalony zmodyfikowany plik", yellow, lightgray, lightgray)
+    ModifiedRemoteDownloaded --> ModifiedRemotePersisted : Utrwalenie stanu lokalnego
+
+    ModifiedRemotePersisted -up-> FullSync
+}
+
+
+state "Usunięcie pliku" as DeletedFile ##[dotted] {
+    MainState(DeletedLocal, "Usunięty plik lokalny", lightgray, red, lightgray)
+    FullSync -down-> DeletedLocal : Lokalne usunięcie pliku
+
+    TransitionState(DeletedLocalUpload, "Zgodność klient-serwer", lightgray, white, red)
+    DeletedLocal --> DeletedLocalUpload : Żądanie usunięcia pliku z chmury
+
+    TransitionState(DeletedLocalPersisted, "Utrwalone usunięcie pliku", red, white, white)
+    DeletedLocalUpload --> DeletedLocalPersisted : Utrwalenie stanu lokalnego
+
+    DeletedLocalPersisted -up-> Init
+
+
+    MainState(DeletedRemote, "Usunięty plik w chmurze", lightgray, lightgray, red)
+    FullSync -down-> DeletedRemote : Wykrycie braku pliku w chmurze
+
+    TransitionState(DeletedRemoteDownload, "Zgodność klient-serwer", lightgray, red, white)
+    DeletedRemote --> DeletedRemoteDownload : Usunięcie pliku lokalnie
+
+    DeletedRemoteDownload --> DeletedLocalPersisted : Utrwalenie stanu lokalnego
+}
+
+@enduml
