@@ -49,6 +49,9 @@ namespace CloudDrive.App
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
                 .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()
                 .AddSingleton<IBenchmarkService, BenchmarkService>()
+                .AddTransient<ILocalIncomingFileIndexService, LocalIncomingFileIndexService>()
+                .AddTransient<IRemoteIncomingFileIndexService, RemoteIncomingFileIndexService>()
+                .AddSingleton<ILocalCommitedFileIndexService, LiteDBLocalCommitedFileIndexService>()
                 // logging
                 .AddLogging(builder =>
                 {
