@@ -139,7 +139,7 @@ namespace CloudDrive.App.Utils
             {
                 if (_localCommitedPathDict.TryGetValue(path, out var localCommitedEntry) &&
                     _localIncomingPathDict.TryGetValue(path, out var localIncomingEntry) &&
-                    localIncomingEntry.LastModifiedDate > localCommitedEntry.CommitedDate)
+                    localIncomingEntry.LastModifiedDate > localCommitedEntry.LocalCommitedDate)
                 {
                     _remoteIncomingIdDict.TryGetValue(localCommitedEntry.FileId, out var remoteIncomingEntry);
 
@@ -161,7 +161,7 @@ namespace CloudDrive.App.Utils
             {
                 if (_localCommitedIdDict.TryGetValue(fileId, out var localCommitedEntry) &&
                     _remoteIncomingIdDict.TryGetValue(fileId, out var remoteIncomingEntry) &&
-                    remoteIncomingEntry.VersionCreatedDate > localCommitedEntry.CommitedDate)
+                    remoteIncomingEntry.FileModifiedDate > localCommitedEntry.LocalCommitedDate)
                 {
                     _localIncomingPathDict.TryGetValue(localCommitedEntry.GetWatchedFileSystemPath(), out var localIncomingEntry);
 

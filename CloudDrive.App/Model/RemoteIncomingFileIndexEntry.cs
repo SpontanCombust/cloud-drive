@@ -6,6 +6,9 @@
 
         public required bool IsDirectory { get; set; }
 
+        public required DateTime? FileModifiedDate { get; set; }
+
+
         public required Guid FileVersionId { get; set; }
 
         public required string WatchedFolderPath { get; set; }

@@ -41,6 +41,7 @@ namespace CloudDrive.App.ServicesImpl
                 .Select(fve => new RemoteIncomingFileIndexEntry
                 {
                     FileId = fve.File.FileId,
+                    FileModifiedDate = fve.File.ModifiedDate?.DateTime,
                     IsDirectory = fve.File.IsDir,
                     FileVersionId = fve.FileVersion.FileVersionId,
                     WatchedFolderPath = watchedFolder,

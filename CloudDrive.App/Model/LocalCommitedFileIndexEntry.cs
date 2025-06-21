@@ -23,7 +23,7 @@ namespace CloudDrive.App.Model
 
         public required DateTime VersionCreatedDate { get; set; }
 
-        public required DateTime CommitedDate { get; set; }
+        public required DateTime LocalCommitedDate { get; set; }
 
 
         public static LocalCommitedFileIndexEntry FromFileVersionAndPath(FileVersionDTO fileVersionInfo, WatchedFileSystemPath path)
@@ -39,7 +39,7 @@ namespace CloudDrive.App.Model
                 Md5 = fileVersionInfo.Md5,
                 SizeBytes = fileVersionInfo.SizeBytes,
                 VersionCreatedDate = fileVersionInfo.CreatedDate.DateTime,
-                CommitedDate = DateTime.UtcNow
+                LocalCommitedDate = DateTime.UtcNow
             };
         }
 
@@ -56,7 +56,7 @@ namespace CloudDrive.App.Model
                 Md5 = remoteIncoming.Md5,
                 SizeBytes = remoteIncoming.SizeBytes,
                 VersionCreatedDate = remoteIncoming.VersionCreatedDate,
-                CommitedDate = DateTime.UtcNow
+                LocalCommitedDate = DateTime.UtcNow
             };
         }
 
