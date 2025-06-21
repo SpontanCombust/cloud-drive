@@ -128,29 +128,38 @@ namespace CloudDrive.App.ServicesImpl
                 await Task.WhenAll(syncTasks);
                 syncTasks.Clear();
 
-                //FIXME oddzielne obsługiwanie nowych do pobrania i zmodyfikowanych do pobrania
+
                 // Faza 2: Dodawanie i aktualizacja folderów
                 var foldersToDownload = staging.AddedRemotely()
                     .Where(set => set.RemoteIncoming.IsDirectory)
                     .Select(set => set.RemoteIncoming);
+                var foldersToUpdateLocally = staging.ModifiedRemotely()
+                    .Where(set => set.RemoteIncoming.IsDirectory)
+                    .Select(set => new { set.LocalCommited, set.RemoteIncoming });
                 var foldersToUpload = staging.AddedLocally()
                     .Where(set => set.LocalIncoming.IsDirectory)
                     .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-                var foldersToUpdate = staging.ModifiedLocally()
+                var foldersToUpdateOnRemote = staging.ModifiedLocally()
                     .Where(set => set.LocalIncoming.IsDirectory)
                     .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-
+                
                 foreach (var incomingData in foldersToDownload)
                 {
-                    syncTasks.Add(DownloadActiveFolderFromRemoteAsync(incomingData));
+                    syncTasks.Add(DownloadNewFolderFromRemoteAsync(incomingData));
+                }
+
+                foreach (var updateData in foldersToUpdateLocally)
+                {
+                    syncTasks.Add(DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
                 }
 
                 foreach (var fsPath in foldersToUpload)
                 {
+                    // nierekurencyjnie, bo localIncomingFileIndex już zajął się dogłębnym skanowaniem folderów
                     syncTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
                 }
 
-                foreach (var fsPath in foldersToUpdate)
+                foreach (var fsPath in foldersToUpdateOnRemote)
                 {
                     syncTasks.Add(UploadModifiedFolderToRemoteAsync(fsPath));
                 }
@@ -165,16 +174,24 @@ namespace CloudDrive.App.ServicesImpl
                 var filesToDownload = staging.AddedRemotely()
                     .Where(set => !set.RemoteIncoming.IsDirectory)
                     .Select(set => set.RemoteIncoming);
+                var filesToUpdateLocally = staging.ModifiedRemotely()
+                    .Where(set => !set.RemoteIncoming.IsDirectory)
+                    .Select(set => new { set.LocalCommited, set.RemoteIncoming });
                 var filesToUpload = staging.AddedLocally()
                     .Where(set => !set.LocalIncoming.IsDirectory)
                     .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-                var filesToUpdate = staging.ModifiedLocally()
+                var filesToUpdateOnRemote = staging.ModifiedLocally()
                     .Where(set => !set.LocalIncoming.IsDirectory)
                     .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
 
                 foreach (var incomingData in filesToDownload)
                 {
-                    syncTasks.Add(DownloadActiveFileFromRemoteAsync(incomingData));
+                    syncTasks.Add(DownloadNewFileFromRemoteAsync(incomingData));
+                }
+
+                foreach (var updateData in filesToUpdateLocally)
+                {
+                    syncTasks.Add(DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
                 }
 
                 foreach (var fsPath in filesToUpload)
@@ -182,10 +199,10 @@ namespace CloudDrive.App.ServicesImpl
                     syncTasks.Add(UploadNewFileToRemoteAsync(fsPath));
                 }
 
-                foreach (var fsPath in filesToUpdate)
+                foreach (var fsPath in filesToUpdateOnRemote)
                 {
                     syncTasks.Add(UploadModifiedFileToRemoteAsync(fsPath));
-                }
+                } 
 
                 await Task.WhenAll(syncTasks);
 
@@ -284,8 +301,7 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        //FIXME osobne fukncje dla nowych i zmodyfikowanych zdalnie
-        private async Task DownloadActiveFolderFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
+        private async Task DownloadNewFolderFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
             WatchedFileSystemPath path = incomingRemoteEntry.GetWatchedFileSystemPath();
 
@@ -311,6 +327,63 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Błąd przy tworzeniu lokalnego folderu: {path.Full}");
+                throw;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        /// <summary>
+        /// UWAGA!
+        /// Funkcję należy stosować dopiero PO obsłudze wszystkich zmodyfikowanych plików.
+        /// W przeciwnym wypadku usunięcie katalogu spowoduje usunięcie jego zagnieżdżonych plików,
+        /// a tym samym zaburzenie procesu synchronizacji.
+        /// </summary>
+        private async Task DownloadModifiedFolderFromRemoteAsync(LocalCommitedFileIndexEntry commitedLocalEntry, RemoteIncomingFileIndexEntry incomingRemoteEntry)
+        {
+            WatchedFileSystemPath prevPath = commitedLocalEntry.GetWatchedFileSystemPath();
+            WatchedFileSystemPath newPath = incomingRemoteEntry.GetWatchedFileSystemPath();
+
+            var bench = _benchmarkService.StartBenchmark("Pobieranie zmodyfikowanego folderu", newPath.Relative);
+
+            try
+            {
+                if (!prevPath.Equals(newPath))
+                {
+                    if (prevPath.Exists)
+                    {
+                        Directory.Delete(prevPath.Full, true);
+                        _logger.LogInformation("Usunięto starą wersję folderu z {Path}", prevPath.Full);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Stara lokalna wersja nie istnieje dla folderu zmodyfikowanego zdalnie: {Path}", prevPath.Full);
+                    }
+                }
+
+                if (!Directory.Exists(newPath.Full))
+                {
+                    Directory.CreateDirectory(newPath.Full);
+                    _logger.LogInformation("Utworzono lokalnie nową wersję folderu w: {Path}", newPath.Full);
+                }
+                else
+                {
+                    _logger.LogDebug("Folder lokalny już istnieje: {Path}", newPath.Full);
+                }
+
+                var commitedEntry = LocalCommitedFileIndexEntry.FromRemoteIncomingIndexEntryAndPath(incomingRemoteEntry, newPath);
+                if (_localCommitedFileIndex.Insert(commitedEntry) == null)
+                {
+                    _logger.LogDebug("Stara lokalna wersja nie istniała w indeksie dla folderu zmodyfikowanego zdalnie: {FileId}", incomingRemoteEntry.FileId);
+                }
+
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd przy tworzeniu nowszej wersji lokalnego folderu: {Path}", newPath.Full);
                 throw;
             }
             finally
@@ -681,8 +754,8 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
-        //FIXME osobne fukncje dla nowych i zmodyfikowanych zdalnie
-        private async Task DownloadActiveFileFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
+
+        private async Task DownloadNewFileFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
             WatchedFileSystemPath path = incomingRemoteEntry.GetWatchedFileSystemPath();
 
@@ -692,13 +765,14 @@ namespace CloudDrive.App.ServicesImpl
             {
                 var fileResponse = await Api.GetActiveFileVersionAsync(incomingRemoteEntry.FileId);
 
+                // upewnij się, że katalog nadrzędny istnieje
                 Directory.CreateDirectory(path.FullParentDir);
 
                 using (var fileStream = File.Create(path.Full))
                 {
                     await fileResponse.Stream.CopyToAsync(fileStream);
 
-                    _logger.LogInformation($"Pobrano plik do: {path.Full}");
+                    _logger.LogInformation("Pobrano nowy plik do: {Path}", path.Full);
                 }
 
                 var commitedEntry = LocalCommitedFileIndexEntry.FromRemoteIncomingIndexEntryAndPath(incomingRemoteEntry, path);
@@ -706,11 +780,71 @@ namespace CloudDrive.App.ServicesImpl
             }
             catch (ApiException ex)
             {
-                throw new Exception(ex.Response);
+                _logger.LogError("Błąd API (GetActiveFileVersionAsync): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    path.Full, ex.StatusCode, ex.Response);
+                throw;
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                _logger.LogError(ex, "DownloadNewFileFromRemoteAsync nie powiódł się: {Path}", path.Full);
+                throw;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        private async Task DownloadModifiedFileFromRemoteAsync(LocalCommitedFileIndexEntry commitedLocalEntry, RemoteIncomingFileIndexEntry incomingRemoteEntry)
+        {
+            WatchedFileSystemPath prevPath = commitedLocalEntry.GetWatchedFileSystemPath();
+            WatchedFileSystemPath newPath = incomingRemoteEntry.GetWatchedFileSystemPath();
+
+            var bench = _benchmarkService.StartBenchmark("Pobieranie zmodyfikowanego pliku", newPath.Relative);
+
+            try
+            {
+                if (!prevPath.Equals(newPath))
+                {
+                    if (prevPath.Exists)
+                    {
+                        File.Delete(prevPath.Full);
+                        _logger.LogInformation("Usunięto starą wersję pliku z {Path}", prevPath.Full);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Stara lokalna wersja już nie istnieje dla pliku zmodyfikowanego zdalnie: {Path}", prevPath.Full);
+                    }
+                }
+
+                var fileResponse = await Api.GetActiveFileVersionAsync(incomingRemoteEntry.FileId);
+
+                // upewnij się, że katalog nadrzędny istnieje
+                Directory.CreateDirectory(newPath.FullParentDir);
+
+                using (var fileStream = File.Create(newPath.Full))
+                {
+                    await fileResponse.Stream.CopyToAsync(fileStream);
+
+                    _logger.LogInformation("Pobrano nową wersję pliku do: {Path}", newPath.Full);
+                }
+
+                var commitedEntry = LocalCommitedFileIndexEntry.FromRemoteIncomingIndexEntryAndPath(incomingRemoteEntry, newPath);
+                if (_localCommitedFileIndex.Insert(commitedEntry) == null)
+                {
+                    _logger.LogDebug("Stara lokalna wersja nie istniała w indeksie dla pliku zmodyfikowanego zdalnie: {FileId}", incomingRemoteEntry.FileId);
+                }
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError("Błąd API (GetActiveFileVersionAsync): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
+                    newPath.Full, ex.StatusCode, ex.Response);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DownloadModifiedFileFromRemoteAsync nie powiódł się: {Path}", newPath.Full);
+                throw;
             }
             finally
             {

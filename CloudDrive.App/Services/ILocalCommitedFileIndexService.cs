@@ -7,6 +7,9 @@ namespace CloudDrive.App.Services
     /// </summary>
     public interface ILocalCommitedFileIndexService
     {
+        /// <summary>
+        /// Zwraca poprzednią wartość wpisu dla danego ID pliku
+        /// </summary>
         LocalCommitedFileIndexEntry? Insert(LocalCommitedFileIndexEntry entry);
 
         LocalCommitedFileIndexEntry? Find(Guid fileId);
