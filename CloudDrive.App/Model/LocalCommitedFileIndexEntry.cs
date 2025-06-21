@@ -43,6 +43,23 @@ namespace CloudDrive.App.Model
             };
         }
 
+        public static LocalCommitedFileIndexEntry FromRemoteIncomingIndexEntryAndPath(RemoteIncomingFileIndexEntry remoteIncoming, WatchedFileSystemPath path)
+        {
+            return new LocalCommitedFileIndexEntry
+            {
+                FileId = remoteIncoming.FileId,
+                IsDirectory = path.IsDirectory,
+                FileVersionId = remoteIncoming.FileVersionId,
+                WatchedFolderPath = path.WatchedFolder,
+                FullPath = path.Full,
+                VersionNr = remoteIncoming.VersionNr,
+                Md5 = remoteIncoming.Md5,
+                SizeBytes = remoteIncoming.SizeBytes,
+                VersionCreatedDate = remoteIncoming.VersionCreatedDate,
+                CommitedDate = DateTime.UtcNow
+            };
+        }
+
         public static void EnsureIndices(ILiteCollection<LocalCommitedFileIndexEntry> collection)
         {
             ArgumentNullException.ThrowIfNull(collection, nameof(collection));
