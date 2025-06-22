@@ -67,6 +67,13 @@ namespace CloudDrive.App.ServicesImpl
                 await _syncService.SynchronizeAllFilesAsync();
                 _lastSuccessfulSync = DateTime.Now;
                 _logger.LogInformation("AutoSync: zakończono synchronizację o {Time}.", _lastSuccessfulSync);
+
+                //Reset timera synchronizacji
+                if (_timer != null)
+                {
+                    var interval = TimeSpan.FromSeconds(_userSettings.SyncIntervalSeconds);
+                    _timer.Change(interval, interval);
+                }
             }
             catch (Exception ex)
             {
