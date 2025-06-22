@@ -1,8 +1,9 @@
-﻿using System;
+﻿using CloudDrive.App.Services;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
-using CloudDrive.App.Services;
-using Microsoft.Extensions.Logging;
 
 namespace CloudDrive.App.ServicesImpl
 {
@@ -10,25 +11,31 @@ namespace CloudDrive.App.ServicesImpl
     {
         private readonly ISyncService _syncService;
         private readonly ILogger<AutoSyncService> _logger;
+        private readonly IUserSettingsService _userSettings;
+
         private Timer? _timer;
         private bool _isRunning = false;
-        private readonly TimeSpan _syncInterval = TimeSpan.FromSeconds(10);
+        private DateTime? _lastSuccessfulSync;
 
-        public AutoSyncService(ISyncService syncService, ILogger<AutoSyncService> logger)
+        public AutoSyncService(ISyncService syncService, ILogger<AutoSyncService> logger, IUserSettingsService userSettings)
         {
             _syncService = syncService;
             _logger = logger;
+            _userSettings = userSettings;
         }
+
         public void StartSync()
         {
             if (_timer != null)
             {
-                _logger.LogWarning("AutoSyncService już działa.");
+                _logger.LogWarning("AutoSyncService działa.");
                 return;
             }
 
-            _logger.LogInformation("AutoSyncService uruchomiony. Synchronizacja co {Interval}.", _syncInterval);
-            _timer = new Timer(SyncCallback, null, TimeSpan.Zero, _syncInterval);
+            TimeSpan interval = TimeSpan.FromSeconds(_userSettings.SyncIntervalSeconds);
+
+            _logger.LogInformation("AutoSyncService uruchomiony. Synchronizacja co {Interval}.", interval);
+            _timer = new Timer(SyncCallback, null, TimeSpan.Zero, interval);
         }
 
         public void StopSync()
@@ -46,13 +53,20 @@ namespace CloudDrive.App.ServicesImpl
                 return;
             }
 
+            if (!IsInternetAvailable())
+            {
+                _logger.LogWarning("Brak połączenia z internetem – synchronizacja pominięta.");
+                return;
+            }
+
             _isRunning = true;
 
             try
             {
-                _logger.LogInformation("AutoSync: rozpoczęcie synchronizacji...");
+                _logger.LogInformation("AutoSync: rozpoczęcie synchronizacji o {Time}...", DateTime.Now);
                 await _syncService.SynchronizeAllFilesAsync();
-                _logger.LogInformation("AutoSync: zakończono synchronizację.");
+                _lastSuccessfulSync = DateTime.Now;
+                _logger.LogInformation("AutoSync: zakończono synchronizację o {Time}.", _lastSuccessfulSync);
             }
             catch (Exception ex)
             {
@@ -61,6 +75,19 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _isRunning = false;
+            }
+        }
+
+        private bool IsInternetAvailable()
+        {
+            try
+            {
+                return NetworkInterface.GetIsNetworkAvailable();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Błąd sprawdzania połączenia internetowego.");
+                return false;
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using CloudDrive.App.Services;
 using Newtonsoft.Json;
 using System.IO;
+using CloudDrive.App.Model;
 
 namespace CloudDrive.App.ServicesImpl
 {
@@ -8,6 +9,8 @@ namespace CloudDrive.App.ServicesImpl
     {
         public Uri? ServerUrl { get; set; } = null;
         public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
+
+        public int SyncIntervalSeconds { get; set; } = 10; // domyślnie 10 sekund
 
 
         private static string DefaultWatchedFolderPath
@@ -30,7 +33,6 @@ namespace CloudDrive.App.ServicesImpl
             _userSettings = new UserSettings();
         }
 
-
         public Uri? ServerUrl { 
             get => _userSettings.ServerUrl; 
             set => _userSettings.ServerUrl = value; 
@@ -39,11 +41,14 @@ namespace CloudDrive.App.ServicesImpl
             get => _userSettings.WatchedFolderPath; 
             set => _userSettings.WatchedFolderPath = value; 
         }
-
-
         public bool SettingsWereSaved()
         {
             return File.Exists(SettingsFilePath);
+        }
+        public int SyncIntervalSeconds
+        {
+            get => _userSettings.SyncIntervalSeconds;
+            set => _userSettings.SyncIntervalSeconds = value;
         }
 
         public Task SaveSettingsAsync()
@@ -72,6 +77,8 @@ namespace CloudDrive.App.ServicesImpl
                     }
                 }
             }
+
+
 
             return Task.CompletedTask;
         }

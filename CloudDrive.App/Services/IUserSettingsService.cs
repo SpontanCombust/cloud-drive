@@ -4,7 +4,7 @@
     {
         Uri? ServerUrl { get; set; }
         string WatchedFolderPath { get; set; }
-
+        int SyncIntervalSeconds { get; set; }
         bool SettingsWereSaved();
         Task SaveSettingsAsync();
         Task LoadSettingsAsync();
