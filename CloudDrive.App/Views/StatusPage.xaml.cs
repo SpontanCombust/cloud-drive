@@ -31,6 +31,7 @@ namespace CloudDrive.App.Views
         private readonly IViewLocator _viewLocator;
         private readonly IFileSystemWatcher _fileSystemWatcher;
         private readonly IBenchmarkService _benchmarkService;
+        private readonly IAutoSyncService _autoSyncService;
 
         public readonly StatusPageViewModel ViewModel;
 
@@ -40,7 +41,8 @@ namespace CloudDrive.App.Views
             ISyncService syncService,
             IViewLocator viewLocator,
             IFileSystemWatcher fileSystemWatcher,
-            IBenchmarkService benchmarkService)
+            IBenchmarkService benchmarkService,
+            IAutoSyncService autoSyncService)
         {
             _logRelay = logRelay;
             _logHistory = logHistory;
@@ -48,6 +50,7 @@ namespace CloudDrive.App.Views
             _viewLocator = viewLocator;
             _fileSystemWatcher = fileSystemWatcher;
             _benchmarkService = benchmarkService;
+            _autoSyncService = autoSyncService;
 
             ViewModel = new StatusPageViewModel();
             DataContext = ViewModel;
@@ -80,10 +83,11 @@ namespace CloudDrive.App.Views
                 try
                 {
                     _fileSystemWatcher.Start();
+                    _autoSyncService.StartSync();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Nie udało się uruchomić obserwatora: " + ex.Message);
+                    MessageBox.Show("Nie udało się uruchomić obserwatora lub auto-sync: " + ex.Message);
                 }
             });
         }
@@ -121,6 +125,7 @@ namespace CloudDrive.App.Views
             try
             {
                 _fileSystemWatcher.Stop();
+                _autoSyncService.StopSync();
             }
             catch (Exception ex)
             {

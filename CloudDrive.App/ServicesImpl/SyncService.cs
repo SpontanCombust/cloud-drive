@@ -981,9 +981,6 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
-
-
-
         private HashSet<WatchedFileSystemPath> ScanWatchedFolder()
         {
             string? watched = _userSettingsService.WatchedFolderPath;
@@ -1006,8 +1003,6 @@ namespace CloudDrive.App.ServicesImpl
 
             return localFiles.Union(localDirs).ToHashSet();
         }
-
-
         private bool TryGetLocalFileInfoByFileId(Guid fileId, out WatchedFileSystemPath path, out FileVersionDTO fv)
         {
             var q = _fileVersionState.Where(kv => kv.Value.FileId == fileId);
