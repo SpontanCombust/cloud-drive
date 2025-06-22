@@ -45,6 +45,7 @@ namespace CloudDrive.App
                     return factory.Create();
                 })
                 .AddSingleton<ISyncService, SyncService>()
+                .AddSingleton<IAutoSyncService, AutoSyncService>()
                 .AddSingleton<ILogRelayService>(logRelay)
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
                 .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()
