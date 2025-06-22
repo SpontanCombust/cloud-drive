@@ -327,7 +327,7 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Błąd przy tworzeniu lokalnego folderu: {path.Full}");
-                throw;
+                //throw;
             }
             finally
             {
@@ -384,7 +384,7 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy tworzeniu nowszej wersji lokalnego folderu: {Path}", newPath.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -430,12 +430,12 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError(ex, "Błąd API przy aktualizacji folderu: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
                     path.Full, ex.StatusCode, ex.Response);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy aktualizacji folderu: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -499,12 +499,12 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError(ex, "Błąd API przy zmianie nazwy folderu folderu: {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
                     oldPath.Full, ex.StatusCode, ex.Response);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy zmianie nazwy folderu {Path}", oldPath.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -537,12 +537,12 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 _logger.LogError(ex, "Błąd API przy wysyłaniu folderu: {Path}", path.Full);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd ogólny przy wysyłaniu folderu: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -590,7 +590,7 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 _logger.LogError(ex, "Błąd przy usuwaniu folderu: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -742,12 +742,12 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError("Błąd API (Upload file): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
                     path.Full, ex.StatusCode, ex.Response);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "UploadNewFileToRemoteAsync nie powiódł się: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -782,12 +782,12 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError("Błąd API (GetActiveFileVersionAsync): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
                     path.Full, ex.StatusCode, ex.Response);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "DownloadNewFileFromRemoteAsync nie powiódł się: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -839,12 +839,12 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError("Błąd API (GetActiveFileVersionAsync): {Path}\nStatusCode: {StatusCode}\nResponse: {Response}",
                     newPath.Full, ex.StatusCode, ex.Response);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "DownloadModifiedFileFromRemoteAsync nie powiódł się: {Path}", newPath.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -911,12 +911,12 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 _logger.LogError(ex, "Błąd API przy aktualizacji pliku: {Path}", path.Full);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd ogólny przy modyfikacji pliku: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -961,12 +961,12 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 _logger.LogError(ex, "Błąd API przy zmianie nazwy pliku: {Path}", oldPath.Full);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd ogólny przy zmianie nazwy pliku: {Path}", oldPath.Full);
-                throw;
+                //throw;
             }
             finally
             {
@@ -997,12 +997,12 @@ namespace CloudDrive.App.ServicesImpl
             catch (ApiException ex)
             {
                 _logger.LogError(ex, "Błąd API przy usuwaniu pliku: {Path}", path.Full);
-                throw;
+                //throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd ogólny przy usuwaniu pliku: {Path}", path.Full);
-                throw;
+                //throw;
             }
             finally
             {
