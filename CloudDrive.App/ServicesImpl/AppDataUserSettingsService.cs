@@ -9,7 +9,6 @@ namespace CloudDrive.App.ServicesImpl
     {
         public Uri? ServerUrl { get; set; } = null;
         public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
-
         public int SyncIntervalSeconds { get; set; } = 10; // domyślnie 10 sekund
 
 
