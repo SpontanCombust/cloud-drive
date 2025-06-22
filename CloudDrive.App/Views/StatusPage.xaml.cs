@@ -35,8 +35,6 @@ namespace CloudDrive.App.Views
 
         public readonly StatusPageViewModel ViewModel;
 
-        public readonly StatusPageViewModel ViewModel;
-
         public StatusPage(
             ILogRelayService logRelay,
             ILogHistoryService logHistory,
@@ -53,9 +51,6 @@ namespace CloudDrive.App.Views
             _fileSystemWatcher = fileSystemWatcher;
             _benchmarkService = benchmarkService;
             _autoSyncService = autoSyncService;
-
-            ViewModel = new StatusPageViewModel();
-            DataContext = ViewModel;
 
             ViewModel = new StatusPageViewModel();
             DataContext = ViewModel;
