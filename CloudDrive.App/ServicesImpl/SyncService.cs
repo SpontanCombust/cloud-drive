@@ -38,13 +38,6 @@ namespace CloudDrive.App.ServicesImpl
             var localIncomingFileIndex = App.Services.GetRequiredService<ILocalIncomingFileIndexService>();
             var remoteIncomingFileIndex = App.Services.GetRequiredService<IRemoteIncomingFileIndexService>();
 
-            if (localIncomingFileIndex is null || remoteIncomingFileIndex is null)
-            {
-                _logger.LogError("Nie można przeprowadzić synchronizacji, ponieważ nie można uzyskać dostępu do indeksów plików.");
-                return;
-            }
-
-
             var bench = _benchmarkService.StartBenchmark("Pełna synchronizacja");
 
             try
@@ -59,154 +52,10 @@ namespace CloudDrive.App.ServicesImpl
                     localIncomingFileIndex.FindAll(), 
                     remoteIncomingFileIndex.FindAll());
 
+                var pullChanges = await PullAllRemoteChangesAsync(staging);
+                var pushChanges = await PushAllLocalChangesAsync(staging);
 
-                // Faza 1: Usuwanie folderów i plików
-                var foldersToRemoveFromRemote = staging.DeletedLocally()
-                    .Where(set => set.LocalCommited.IsDirectory)
-                    .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
-                var filesToRemoveFromRemote = staging.DeletedLocally()
-                    .Where(set => !set.LocalCommited.IsDirectory)
-                    .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
-
-                var foldersToRemoveLocally = staging.DeletedRemotely()
-                    .Where(set => set.LocalCommited.IsDirectory)
-                    .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
-                var filesToRemoveLocally = staging.DeletedRemotely()
-                    .Where(set => !set.LocalCommited.IsDirectory)
-                    .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
-
-                var syncTasks = new List<Task>();
-
-                // Usuń foldery zdalnie
-                foreach (var fsPath in foldersToRemoveFromRemote)
-                {
-                    syncTasks.Add(RemoveFoldersFromRemoteAsync(fsPath));
-                }
-                // Usuń pliki zdalnie
-                foreach (var fsPath in filesToRemoveFromRemote)
-                {
-                    syncTasks.Add(RemoveFileFromRemoteAsync(fsPath));
-                }
-
-
-                // Usuń foldery lokalnie
-                foreach (var fsPath in foldersToRemoveLocally)
-                {
-                    if (Directory.Exists(fsPath.Full))
-                    {
-                        try
-                        {
-                            Directory.Delete(fsPath.Full, true);
-                            _logger.LogInformation($"Usunięto folder lokalnie: {fsPath.Full}");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, $"Błąd przy usuwaniu folderu lokalnie: {fsPath.Full}");
-                        }
-                    }
-                }
-
-                // Usuń pliki lokalnie
-                foreach (var fsPath in filesToRemoveLocally)
-                {
-                    if (File.Exists(fsPath.Full))
-                    {
-                        try
-                        {
-                            File.Delete(fsPath.Full);
-                            _logger.LogInformation($"Usunięto plik lokalnie: {fsPath.Full}");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, $"Błąd przy usuwaniu pliku lokalnie: {fsPath.Full}");
-                        }
-                    }
-                }
-
-
-                // zaczekaj aż faza 1 się zakończy
-                await Task.WhenAll(syncTasks);
-                syncTasks.Clear();
-
-
-                // Faza 2: Dodawanie i aktualizacja folderów
-                var foldersToDownload = staging.AddedRemotely()
-                    .Where(set => set.RemoteIncoming.IsDirectory)
-                    .Select(set => set.RemoteIncoming);
-                var foldersToUpdateLocally = staging.ModifiedRemotely()
-                    .Where(set => set.RemoteIncoming.IsDirectory)
-                    .Select(set => new { set.LocalCommited, set.RemoteIncoming });
-                var foldersToUpload = staging.AddedLocally()
-                    .Where(set => set.LocalIncoming.IsDirectory)
-                    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-                var foldersToUpdateOnRemote = staging.ModifiedLocally()
-                    .Where(set => set.LocalIncoming.IsDirectory)
-                    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-                
-                foreach (var incomingData in foldersToDownload)
-                {
-                    syncTasks.Add(DownloadNewFolderFromRemoteAsync(incomingData));
-                }
-
-                foreach (var updateData in foldersToUpdateLocally)
-                {
-                    syncTasks.Add(DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
-                }
-
-                foreach (var fsPath in foldersToUpload)
-                {
-                    // nierekurencyjnie, bo localIncomingFileIndex już zajął się dogłębnym skanowaniem folderów
-                    syncTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
-                }
-
-                foreach (var fsPath in foldersToUpdateOnRemote)
-                {
-                    syncTasks.Add(UploadModifiedFolderToRemoteAsync(fsPath));
-                }
-
-
-                // zaczekaj aż faza 2 się zakończy
-                await Task.WhenAll(syncTasks);
-                syncTasks.Clear();
-
-
-                // Faza 3: Dodawanie i aktualizacja plików
-                var filesToDownload = staging.AddedRemotely()
-                    .Where(set => !set.RemoteIncoming.IsDirectory)
-                    .Select(set => set.RemoteIncoming);
-                var filesToUpdateLocally = staging.ModifiedRemotely()
-                    .Where(set => !set.RemoteIncoming.IsDirectory)
-                    .Select(set => new { set.LocalCommited, set.RemoteIncoming });
-                var filesToUpload = staging.AddedLocally()
-                    .Where(set => !set.LocalIncoming.IsDirectory)
-                    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-                var filesToUpdateOnRemote = staging.ModifiedLocally()
-                    .Where(set => !set.LocalIncoming.IsDirectory)
-                    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
-
-                foreach (var incomingData in filesToDownload)
-                {
-                    syncTasks.Add(DownloadNewFileFromRemoteAsync(incomingData));
-                }
-
-                foreach (var updateData in filesToUpdateLocally)
-                {
-                    syncTasks.Add(DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
-                }
-
-                foreach (var fsPath in filesToUpload)
-                {
-                    syncTasks.Add(UploadNewFileToRemoteAsync(fsPath));
-                }
-
-                foreach (var fsPath in filesToUpdateOnRemote)
-                {
-                    syncTasks.Add(UploadModifiedFileToRemoteAsync(fsPath));
-                } 
-
-                await Task.WhenAll(syncTasks);
-
-                _logger.LogInformation("Zakończono pełną synchronizację!");
+                _logger.LogInformation("Zakończono pełną synchronizację! ({Pulls}↓/{Pushes}↑)", pullChanges, pushChanges);
             }
             catch (ApiException ex)
             {
@@ -221,6 +70,193 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
             }
         }
+
+        private async Task<int> PullAllRemoteChangesAsync(FileIndexStagingHelper staging)
+        {
+            var pullTasks = new List<Task>();
+            int numberOfChanges = 0;
+
+            // Faza 1: Usuwanie folderów lokalnie
+            // Najpierw usuwanie, więc jest prioretyzacja stanu plików na serwerze
+
+            var foldersToRemoveLocally = staging.DeletedRemotely()
+                .Where(set => set.LocalCommited.IsDirectory)
+                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+
+            foreach (var fsPath in foldersToRemoveLocally)
+            {
+                RemoveFolderLocally(fsPath);
+                numberOfChanges++;
+            }
+
+
+            // Faza 2: Usuwanie plików
+            // Jeśli pojawią się jakieś, które były w folderach powyżej, powinny po cichu zostać pominięte
+
+            var filesToRemoveLocally = staging.DeletedRemotely()
+                .Where(set => !set.LocalCommited.IsDirectory)
+                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+
+            foreach (var fsPath in filesToRemoveLocally)
+            {
+                RemoveFileLocally(fsPath);
+                numberOfChanges++;
+            }
+
+
+            // Faza 3: Dodawanie folderów
+            // Przygotowanie nowych struktur folderów
+
+            var foldersToDownload = staging.AddedRemotely()
+                    .Where(set => set.RemoteIncoming.IsDirectory)
+                    .Select(set => set.RemoteIncoming);
+
+            foreach (var incomingData in foldersToDownload)
+            {
+                pullTasks.Add(DownloadNewFolderFromRemoteAsync(incomingData));
+                numberOfChanges++;
+            }
+
+
+            // oczekujemy na zakończenie tasków asynchronicznych
+            await Task.WhenAll(pullTasks);
+            pullTasks.Clear();
+
+
+            // Faza 4: Zmiany na zwykłych plikach - dodawanie i modyfikacja
+
+            var filesToDownload = staging.AddedRemotely()
+                    .Where(set => !set.RemoteIncoming.IsDirectory)
+                    .Select(set => set.RemoteIncoming);
+
+            var filesToUpdate = staging.ModifiedRemotely()
+                .Where(set => !set.RemoteIncoming.IsDirectory)
+                .Select(set => new { set.LocalCommited, set.RemoteIncoming });
+
+            foreach (var incomingData in filesToDownload)
+            {
+                pullTasks.Add(DownloadNewFileFromRemoteAsync(incomingData));
+                numberOfChanges++;
+            }
+
+            foreach (var updateData in filesToUpdate)
+            {
+                pullTasks.Add(DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                numberOfChanges++;
+            }
+
+
+            await Task.WhenAll(pullTasks);
+            pullTasks.Clear();
+
+
+            // Faza 5: Modyfikacja folderów lokalnie
+            // To jest ostatnie na wszelki wypadek gdyby miało popsuć działanie poprzednich faz z powodu zmian nazw katalogów na przykład
+
+            var foldersToUpdate = staging.ModifiedRemotely()
+                .Where(set => set.RemoteIncoming.IsDirectory)
+                .Select(set => new { set.LocalCommited, set.RemoteIncoming });
+
+            foreach (var updateData in foldersToUpdate)
+            {
+                pullTasks.Add(DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                numberOfChanges++;
+            }
+
+
+            await Task.WhenAll(pullTasks);
+            pullTasks.Clear();
+
+
+            return numberOfChanges;
+        }
+
+        private async Task<int> PushAllLocalChangesAsync(FileIndexStagingHelper staging)
+        {
+            var pushTasks = new List<Task>();
+            int numberOfChanges = 0;
+
+            // Faza 1: Akcje dla folderów w chmurze
+
+            var foldersToUpload = staging.AddedLocally()
+                .Where(set => set.LocalIncoming.IsDirectory)
+                .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
+
+            // Jedynym sposobem na rzeczwistą zmianę folderu jest zmiana jej nazwy
+            // Na moment obecny wykrycie takiej zmiany jest możliwe tylko w serwisie FileSystemWatcher
+            //var foldersToUpdateOnRemote = staging.ModifiedLocally()
+            //    .Where(set => set.LocalIncoming.IsDirectory)
+            //    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
+
+            var foldersToRemoveFromRemote = staging.DeletedLocally()
+                .Where(set => set.LocalCommited.IsDirectory)
+                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+
+            foreach (var fsPath in foldersToUpload)
+            {
+                // nierekurencyjnie, bo localIncomingFileIndex już zajął się dogłębnym skanowaniem folderów
+                pushTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
+                numberOfChanges++;
+            }
+
+            //foreach (var fsPath in foldersToUpdateOnRemote)
+            //{
+            //    pushTasks.Add(UploadModifiedFolderToRemoteAsync(fsPath));
+            //    numberOfChanges++;
+            //}
+
+            foreach (var fsPath in foldersToRemoveFromRemote)
+            {
+                pushTasks.Add(RemoveFoldersFromRemoteAsync(fsPath));
+                numberOfChanges++;
+            }
+
+
+            // czekamy na zakończenie fazy
+            await Task.WhenAll(pushTasks);
+            pushTasks.Clear();
+
+
+            // Faza 2: Akcje dla zwykłych plików w chmurze
+
+            var filesToUpload = staging.AddedLocally()
+                .Where(set => !set.LocalIncoming.IsDirectory)
+                .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
+
+            var filesToUpdateOnRemote = staging.ModifiedLocally()
+                .Where(set => !set.LocalIncoming.IsDirectory)
+                .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
+
+            var filesToRemoveFromRemote = staging.DeletedLocally()
+                .Where(set => !set.LocalCommited.IsDirectory)
+                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+
+            foreach (var fsPath in filesToUpload)
+            {
+                pushTasks.Add(UploadNewFileToRemoteAsync(fsPath));
+                numberOfChanges++;
+            }
+
+            foreach (var fsPath in filesToUpdateOnRemote)
+            {
+                pushTasks.Add(UploadModifiedFileToRemoteAsync(fsPath));
+                numberOfChanges++;
+            }
+
+            foreach (var fsPath in filesToRemoveFromRemote)
+            {
+                pushTasks.Add(RemoveFileFromRemoteAsync(fsPath));
+                numberOfChanges++;
+            }
+
+
+            await Task.WhenAll(pushTasks);
+            pushTasks.Clear();           
+
+
+            return numberOfChanges;
+        }
+
 
 
         public bool TryGetFileId(WatchedFileSystemPath path, out Guid fileId)
@@ -595,6 +631,26 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        private void RemoveFolderLocally(WatchedFileSystemPath path)
+        {
+            if (path.Exists && path.IsDirectory)
+            {
+                try
+                {
+                    Directory.Delete(path.Full, true);
+                    _logger.LogInformation("Usunięto folder lokalnie: {Path}", path.Full);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Błąd przy usuwaniu folderu lokalnie: {Path}", path.Full);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Folder lokalny nie istnieje lub nie jest katalogiem: {Path}", path.Full);
             }
         }
 
@@ -1007,6 +1063,26 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
+            }
+        }
+
+        private void RemoveFileLocally(WatchedFileSystemPath path)
+        {
+            if (path.Exists && !path.IsDirectory)
+            {
+                try
+                {
+                    File.Delete(path.Full);
+                    _logger.LogInformation("Usunięto plik lokalnie: {Path}", path.Full);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Błąd przy usuwaniu pliku lokalnie: {Path}", path.Full);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Plik lokalny nie istnieje lub nie jest plikiem: {Path}", path.Full);
             }
         }
 
