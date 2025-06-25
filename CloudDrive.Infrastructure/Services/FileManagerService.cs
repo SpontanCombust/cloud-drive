@@ -43,7 +43,8 @@ namespace CloudDrive.Infrastructure.Services
                 throw new InvalidOperationException("File stream is required");
             }
 
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(userId, clientDirPath, fileName))
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(userId, clientDirPath, fileName);
+            if (presentAtClientPath != null)
             {
                 throw new Exception("There already currently exists a file or directory at the specified client path");
             }
@@ -225,9 +226,14 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("Requested file is not a regular file and instead a directory");
             }
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName))
+
+            if (clientFileName != oldFileVersionInfo.ClientFileName || clientDirPath != oldFileVersionInfo.ClientDirPath)
             {
-                throw new Exception("There already currently exists another file or directory at the specified client path");
+                var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName);
+                if (presentAtClientPath != null && presentAtClientPath.FileId != fileId)
+                {
+                    throw new Exception("There already currently exists another file or directory at the specified client path");
+                }
             }
 
 
@@ -299,7 +305,8 @@ namespace CloudDrive.Infrastructure.Services
 
             var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
 
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName);
+            if (presentAtClientPath != null)
             {
                 throw new Exception("There already currently exists a file or directory at the path of the file to be restored");
             }
@@ -331,7 +338,9 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("File version does not belong to the specified file");
             }
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName);
+            if (presentAtClientPath != null && presentAtClientPath.FileId != fileId)
             {
                 throw new Exception("There already currently exists a file or directory at the path of the file version to be restored");
             }
@@ -357,7 +366,8 @@ namespace CloudDrive.Infrastructure.Services
                 throw new InvalidOperationException("User could not be found");
             }
 
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(userId, clientDirPath, fileName))
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(userId, clientDirPath, fileName);
+            if (presentAtClientPath != null)
             {
                 throw new Exception("There already currently exists a file or directory at the specified client path");
             }
@@ -401,9 +411,14 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("Requested file is not a directory and instead a regular file");
             }
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName))
+
+            if (clientFileName != oldFileVersionInfo.ClientFileName || clientDirPath != oldFileVersionInfo.ClientDirPath)
             {
-                throw new Exception("There already currently exists another file or directory at the specified client path of the directory");
+                var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName);
+                if (presentAtClientPath != null && presentAtClientPath.FileId != fileId)
+                {
+                    throw new Exception("There already currently exists another file or directory at the specified client path of the directory");
+                }
             }
 
 
@@ -535,10 +550,12 @@ namespace CloudDrive.Infrastructure.Services
 
             var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored directory");
 
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName);
+            if (presentAtClientPath != null)
             {
                 throw new Exception("There already exists an actively used file or directory at the path of the directory to be restored");
             }
+
 
             fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
 
@@ -567,7 +584,9 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("File version does not belong to the specified file");
             }
-            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+
+            var presentAtClientPath = await fileVersionInfoService.FindPresentUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName);
+            if (presentAtClientPath != null && presentAtClientPath.FileId != fileId)
             {
                 throw new Exception("There already currently exists a file or directory at the path of the directory version to be restored");
             }

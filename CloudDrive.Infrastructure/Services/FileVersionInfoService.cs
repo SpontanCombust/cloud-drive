@@ -225,7 +225,7 @@ namespace CloudDrive.Infrastructure.Services
             return dtos.ToArray();
         }
 
-        public async Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
+        public async Task<FileVersionDTO?> FindInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
         {
             var info = await dbContext.FileVersions
                 .Include(fv => fv.File)
@@ -235,7 +235,7 @@ namespace CloudDrive.Infrastructure.Services
             return info?.ToDto();
         }
 
-        public async Task<bool> ExistsPresentActiveUserFileVersionWithClientPath(Guid userId, string? clientDirPath, string clientFileName)
+        public async Task<FileVersionDTO?> FindPresentUserFileVersionWithClientPath(Guid userId, string? clientDirPath, string clientFileName)
         {
             var q = from f in dbContext.Files
                     join fv in dbContext.FileVersions
@@ -246,7 +246,9 @@ namespace CloudDrive.Infrastructure.Services
                           clientFileName == fv.ClientFileName
                     select fv;
 
-            return await q.AnyAsync();
+            var presentFv = await q.FirstOrDefaultAsync();
+
+            return presentFv?.ToDto();
         }
     }
 }
