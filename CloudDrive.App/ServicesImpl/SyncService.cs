@@ -73,7 +73,9 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task<int> PullAllRemoteChangesAsync(FileIndexStagingHelper staging)
         {
-            var pullTasks = new List<Task>();
+            // asynchroniczne równoległe wykonywanie wszystkich akcji wyłączone ze względu
+            // na obecnie niedostateczy stopień zabezpieczeń ws. dostępu do lokalnych plików
+            //var pullTasks = new List<Task>();
             int numberOfChanges = 0;
 
             // Faza 1: Usuwanie folderów lokalnie
@@ -81,11 +83,11 @@ namespace CloudDrive.App.ServicesImpl
 
             var foldersToRemoveLocally = staging.DeletedRemotely()
                 .Where(set => set.LocalCommited.IsDirectory)
-                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+                .Select(set => set.LocalCommited);
 
-            foreach (var fsPath in foldersToRemoveLocally)
+            foreach (var commitedData in foldersToRemoveLocally)
             {
-                RemoveFolderLocally(fsPath);
+                RemoveFolderLocally(commitedData);
                 numberOfChanges++;
             }
 
@@ -95,11 +97,11 @@ namespace CloudDrive.App.ServicesImpl
 
             var filesToRemoveLocally = staging.DeletedRemotely()
                 .Where(set => !set.LocalCommited.IsDirectory)
-                .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
+                .Select(set => set.LocalCommited);
 
-            foreach (var fsPath in filesToRemoveLocally)
+            foreach (var commitedData in filesToRemoveLocally)
             {
-                RemoveFileLocally(fsPath);
+                RemoveFileLocally(commitedData);
                 numberOfChanges++;
             }
 
@@ -113,14 +115,15 @@ namespace CloudDrive.App.ServicesImpl
 
             foreach (var incomingData in foldersToDownload)
             {
-                pullTasks.Add(DownloadNewFolderFromRemoteAsync(incomingData));
+                //pullTasks.Add(DownloadNewFolderFromRemoteAsync(incomingData));
+                await DownloadNewFolderFromRemoteAsync(incomingData);
                 numberOfChanges++;
             }
 
 
             // oczekujemy na zakończenie tasków asynchronicznych
-            await Task.WhenAll(pullTasks);
-            pullTasks.Clear();
+            //await Task.WhenAll(pullTasks);
+            //pullTasks.Clear();
 
 
             // Faza 4: Zmiany na zwykłych plikach - dodawanie i modyfikacja
@@ -135,19 +138,21 @@ namespace CloudDrive.App.ServicesImpl
 
             foreach (var incomingData in filesToDownload)
             {
-                pullTasks.Add(DownloadNewFileFromRemoteAsync(incomingData));
+                //pullTasks.Add(DownloadNewFileFromRemoteAsync(incomingData));
+                await DownloadNewFileFromRemoteAsync(incomingData);
                 numberOfChanges++;
             }
 
             foreach (var updateData in filesToUpdate)
             {
-                pullTasks.Add(DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                //pullTasks.Add(DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                await DownloadModifiedFileFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming);
                 numberOfChanges++;
             }
 
 
-            await Task.WhenAll(pullTasks);
-            pullTasks.Clear();
+            //await Task.WhenAll(pullTasks);
+            //pullTasks.Clear();
 
 
             // Faza 5: Modyfikacja folderów lokalnie
@@ -159,13 +164,14 @@ namespace CloudDrive.App.ServicesImpl
 
             foreach (var updateData in foldersToUpdate)
             {
-                pullTasks.Add(DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                //pullTasks.Add(DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming));
+                await DownloadModifiedFolderFromRemoteAsync(updateData.LocalCommited, updateData.RemoteIncoming);
                 numberOfChanges++;
             }
 
 
-            await Task.WhenAll(pullTasks);
-            pullTasks.Clear();
+            //await Task.WhenAll(pullTasks);
+            //pullTasks.Clear();
 
 
             return numberOfChanges;
@@ -634,14 +640,29 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        private void RemoveFolderLocally(WatchedFileSystemPath path)
+        private void RemoveFolderLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
         {
+            WatchedFileSystemPath path = commitedLocalEntry.GetWatchedFileSystemPath();
+
             if (path.Exists && path.IsDirectory)
             {
                 try
                 {
                     Directory.Delete(path.Full, true);
                     _logger.LogInformation("Usunięto folder lokalnie: {Path}", path.Full);
+
+                    _localCommitedFileIndex.Remove(commitedLocalEntry.FileId);
+                    _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
+
+                    var entriesToRemove = _localCommitedFileIndex
+                        .FindInDirectory(commitedLocalEntry.FileId)
+                        .ToArray();
+
+                    foreach (var e in entriesToRemove)
+                    {
+                        _localCommitedFileIndex.Remove(e.FileId);
+                        _logger.LogInformation("Usunięto indeks dla pliku lub folderu wewnątrz usuniętego katalogu: {Path}", e.FullPath);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1066,13 +1087,18 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        private void RemoveFileLocally(WatchedFileSystemPath path)
+        private void RemoveFileLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
         {
+            WatchedFileSystemPath path = commitedLocalEntry.GetWatchedFileSystemPath();
+
             if (path.Exists && !path.IsDirectory)
             {
                 try
                 {
                     File.Delete(path.Full);
+
+                    _localCommitedFileIndex.Remove(commitedLocalEntry.FileId);
+
                     _logger.LogInformation("Usunięto plik lokalnie: {Path}", path.Full);
                 }
                 catch (Exception ex)

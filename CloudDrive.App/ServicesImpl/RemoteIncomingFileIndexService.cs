@@ -12,6 +12,7 @@ namespace CloudDrive.App.ServicesImpl
         private readonly IUserSettingsService _userSettingsService;
 
         private readonly List<RemoteIncomingFileIndexEntry> _incomingIndex;
+        private DateTime? _serverTime;
 
         public RemoteIncomingFileIndexService(
             WebAPIClientFactory apiFactory, 
@@ -21,6 +22,7 @@ namespace CloudDrive.App.ServicesImpl
             _userSettingsService = userSettingsService;
 
             _incomingIndex = new List<RemoteIncomingFileIndexEntry>();
+            _serverTime = null;
         }
 
 
@@ -51,6 +53,12 @@ namespace CloudDrive.App.ServicesImpl
                     SizeBytes = fve.FileVersion.SizeBytes,
                     VersionCreatedDate = fve.FileVersion.CreatedDate.DateTime
                 }));
+            _serverTime = resp.ServerTime.DateTime;
+        }
+
+        public DateTime? LastFetchServerTime()
+        {
+            return _serverTime;
         }
 
 

@@ -372,6 +372,39 @@
         }
       }
     },
+    "/file-info/last-update": {
+      "get": {
+        "tags": [
+          "FileInfo"
+        ],
+        "operationId": "GetLatestFileChangeDateTime",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/file-info/{fileId}/versions": {
       "get": {
         "tags": [
@@ -692,8 +725,25 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteFileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteFileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteFileResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -951,6 +1001,10 @@
           },
           "firstFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -963,6 +1017,10 @@
           },
           "firstFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -983,6 +1041,20 @@
               "$ref": "#/components/schemas/FileVersionDTO"
             },
             "nullable": true
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteFileResponse": {
+        "type": "object",
+        "properties": {
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1092,6 +1164,10 @@
           },
           "activeFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1104,6 +1180,10 @@
           },
           "activeFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1131,6 +1211,10 @@
               "$ref": "#/components/schemas/FileVersionExtDTO"
             },
             "nullable": true
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1144,6 +1228,10 @@
               "$ref": "#/components/schemas/FileVersionDTO"
             },
             "nullable": true
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1156,6 +1244,10 @@
           },
           "currentFileVersionInfo": {
             "$ref": "#/components/schemas/FileVersionDTO"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1175,6 +1267,10 @@
           },
           "changed": {
             "type": "boolean"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -1187,6 +1283,10 @@
           },
           "changed": {
             "type": "boolean"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

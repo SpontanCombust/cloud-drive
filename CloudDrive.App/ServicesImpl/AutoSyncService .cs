@@ -65,6 +65,13 @@ namespace CloudDrive.App.ServicesImpl
                 return;
             }
 
+            if (!await _syncService.ShouldSynchronizeWithRemoteAsync())
+            {
+                _logger.LogDebug("Synchronizacja pominięta – nie wykryto zmian na serwerze.");
+                return;
+            }
+
+
             _isRunning = true;
 
             try
