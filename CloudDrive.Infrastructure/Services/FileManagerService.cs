@@ -298,7 +298,7 @@ namespace CloudDrive.Infrastructure.Services
         public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId)
         {
             var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File not found");
-            if (!fileInfo.IsDir)
+            if (fileInfo.IsDir)
             {
                 throw new ArgumentException("Specified file ID belongs to a directory and not a regular file");
             }
@@ -327,7 +327,7 @@ namespace CloudDrive.Infrastructure.Services
         public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId)
         {
             var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File not found");
-            if (!fileInfo.IsDir)
+            if (fileInfo.IsDir)
             {
                 throw new ArgumentException("Specified file ID belongs to a directory and not a regular file");
             }
