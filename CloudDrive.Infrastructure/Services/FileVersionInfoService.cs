@@ -46,7 +46,7 @@ namespace CloudDrive.Infrastructure.Services
                 VersionNr = newVersionNr,
                 Md5 = md5Hash,
                 SizeBytes = fileSize,
-                CreatedDate = DateTime.Now.ToUniversalTime()
+                CreatedDate = DateTime.UtcNow
             };
 
             var tracked = (await dbContext.FileVersions.AddAsync(info)).Entity;
