@@ -234,5 +234,19 @@ namespace CloudDrive.Infrastructure.Services
 
             return info?.ToDto();
         }
+
+        public async Task<bool> ExistsPresentActiveUserFileVersionWithClientPath(Guid userId, string? clientDirPath, string clientFileName)
+        {
+            var q = from f in dbContext.Files
+                    join fv in dbContext.FileVersions
+                    on f.ActiveFileVersionId equals fv.FileVersionId
+                    where f.UserId == userId && 
+                          !f.Deleted &&
+                          clientDirPath == fv.ClientDirPath &&
+                          clientFileName == fv.ClientFileName
+                    select fv;
+
+            return await q.AnyAsync();
+        }
     }
 }

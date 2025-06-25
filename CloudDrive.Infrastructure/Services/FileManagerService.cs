@@ -43,7 +43,10 @@ namespace CloudDrive.Infrastructure.Services
                 throw new InvalidOperationException("File stream is required");
             }
 
-            //FIXME make sure there are no local path conflicts between different active files
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(userId, clientDirPath, fileName))
+            {
+                throw new Exception("There already currently exists a file or directory at the specified client path");
+            }
 
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
@@ -222,6 +225,10 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("Requested file is not a regular file and instead a directory");
             }
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName))
+            {
+                throw new Exception("There already currently exists another file or directory at the specified client path");
+            }
 
 
             fileStream.Seek(0, SeekOrigin.Begin);
@@ -247,8 +254,6 @@ namespace CloudDrive.Infrastructure.Services
 
                 fileStream.Seek(0, SeekOrigin.Begin);
                 await fileSystemService.CreateFile(newFileVersionServerPath, fileStream);
-
-                //FIXME make sure there are no local path conflicts between different active files
 
                 var newFileVersionInfo = await fileVersionInfoService.CreateInfoForNewFileVersion(
                     newFileVersionId,
@@ -286,8 +291,22 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId)
         {
-            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File not found");
+            if (!fileInfo.IsDir)
+            {
+                throw new ArgumentException("Specified file ID belongs to a directory and not a regular file");
+            }
+
             var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
+
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            {
+                throw new Exception("There already currently exists a file or directory at the path of the file to be restored");
+            }
+
+
+            fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
+
 
             var result = new RestoreFileResultDTO
             {
@@ -300,14 +319,24 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<RestoreFileResultDTO> RestoreFile(Guid fileId, Guid fileVersionId)
         {
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("File not found");
+            if (!fileInfo.IsDir)
+            {
+                throw new ArgumentException("Specified file ID belongs to a directory and not a regular file");
+            }
+
             var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
 
             if (fileVersionInfo.FileId != fileId)
             {
                 throw new Exception("File version does not belong to the specified file");
             }
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            {
+                throw new Exception("There already currently exists a file or directory at the path of the file version to be restored");
+            }
 
-            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+            fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
 
             var result = new RestoreFileResultDTO
             {
@@ -328,7 +357,10 @@ namespace CloudDrive.Infrastructure.Services
                 throw new InvalidOperationException("User could not be found");
             }
 
-            //FIXME make sure there are no local path conflicts between different active files
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(userId, clientDirPath, fileName))
+            {
+                throw new Exception("There already currently exists a file or directory at the specified client path");
+            }
 
             Guid newFileId = Guid.NewGuid();
             Guid newFileVersionId = Guid.NewGuid();
@@ -369,6 +401,10 @@ namespace CloudDrive.Infrastructure.Services
             {
                 throw new Exception("Requested file is not a directory and instead a regular file");
             }
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, clientDirPath, clientFileName))
+            {
+                throw new Exception("There already currently exists another file or directory at the specified client path of the directory");
+            }
 
 
             bool changed =
@@ -379,8 +415,6 @@ namespace CloudDrive.Infrastructure.Services
             if (changed)
             {
                 Guid newFileVersionId = Guid.NewGuid();
-
-                //FIXME make sure there are no local path conflicts between different active files
 
                 var subfileVersionInfos = await fileVersionInfoService.GetInfoForAllActiveFileVersionsUnderDirectory(fileId, false);
 
@@ -493,8 +527,20 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId)
         {
-            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
-            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored file");
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("Directory not found");
+            if (!fileInfo.IsDir)
+            {
+                throw new ArgumentException("Specified file ID belongs to a regular file and not a directory");
+            }
+
+            var fileVersionInfo = await fileVersionInfoService.GetInfoForActiveFileVersion(fileId) ?? throw new Exception("No active file version found for the restored directory");
+
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            {
+                throw new Exception("There already exists an actively used file or directory at the path of the directory to be restored");
+            }
+
+            fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: null);
 
             var result = new RestoreDirectoryResultDTO
             {
@@ -509,14 +555,24 @@ namespace CloudDrive.Infrastructure.Services
 
         public async Task<RestoreDirectoryResultDTO> RestoreDirectory(Guid fileId, Guid fileVersionId)
         {
+            var fileInfo = await fileInfoService.GetInfoForFile(fileId) ?? throw new Exception("Directory not found");
+            if (!fileInfo.IsDir)
+            {
+                throw new ArgumentException("Specified file ID belongs to a regular file and not a directory");
+            }
+
             var fileVersionInfo = await fileVersionInfoService.GetInfoForFileVersion(fileVersionId) ?? throw new Exception("File version not found");
 
             if (fileVersionInfo.FileId != fileId)
             {
                 throw new Exception("File version does not belong to the specified file");
             }
+            if (await fileVersionInfoService.ExistsPresentActiveUserFileVersionWithClientPath(fileInfo.UserId, fileVersionInfo.ClientDirPath, fileVersionInfo.ClientFileName))
+            {
+                throw new Exception("There already currently exists a file or directory at the path of the directory version to be restored");
+            }
 
-            var fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
+            fileInfo = await fileInfoService.UpdateInfoForFile(fileId, deleted: false, activeFileVersionId: fileVersionId);
 
             var result = new RestoreDirectoryResultDTO
             {
