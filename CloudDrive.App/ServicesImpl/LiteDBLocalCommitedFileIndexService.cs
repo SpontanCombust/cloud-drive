@@ -1,6 +1,7 @@
 ﻿using CloudDrive.App.Model;
 using CloudDrive.App.Services;
 using LiteDB;
+using LiteDB.Engine;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -19,6 +20,7 @@ namespace CloudDrive.App.ServicesImpl
             _logger = logger;
 
             _db = new LiteDatabase(DbFilePath());
+            _db.Pragma("UTC_DATE", true);
             _index = _db.GetCollection<LocalCommitedFileIndexEntry>("commited_file_index");
             LocalCommitedFileIndexEntry.EnsureIndices(_index);
         }
