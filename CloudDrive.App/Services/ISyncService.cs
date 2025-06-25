@@ -4,6 +4,7 @@ namespace CloudDrive.App.Services
 {
     public interface ISyncService
     {
+        Task<bool> ShouldSynchronizeWithRemoteAsync();
         Task SynchronizeAllFilesAsync();
         Task UploadNewFolderRecursivelyAsync(WatchedFileSystemPath folderPath);
         Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path);

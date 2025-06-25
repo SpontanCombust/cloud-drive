@@ -19,6 +19,8 @@ namespace CloudDrive.App.ServicesImpl
         private readonly IBenchmarkService _benchmarkService;
         private readonly ILocalCommitedFileIndexService _localCommitedFileIndex;
 
+        private DateTime _lastServerSyncTime;
+
         public SyncService(
             WebAPIClientFactory apiFactory, 
             IUserSettingsService userSettingsService, 
@@ -31,6 +33,23 @@ namespace CloudDrive.App.ServicesImpl
             _logger = logger;
             _benchmarkService = benchmarkService;
             _localCommitedFileIndex = fileIndex;
+
+            _lastServerSyncTime = DateTime.MinValue;
+        }
+
+
+        public async Task<bool> ShouldSynchronizeWithRemoteAsync()
+        {
+            try
+            {
+                DateTime lastRemoteFileChange = (await Api.GetLatestFileChangeDateTimeAsync()).DateTime;
+                return _lastServerSyncTime < lastRemoteFileChange;
+            }
+            catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd komunikacji z serwerem: {Ex}", ex.Response);
+                return false;
+            }
         }
 
         public async Task SynchronizeAllFilesAsync()
@@ -53,17 +72,23 @@ namespace CloudDrive.App.ServicesImpl
                     remoteIncomingFileIndex.FindAll());
 
                 var pullChanges = await PullAllRemoteChangesAsync(staging);
+                UpdateLastServerSyncTime(remoteIncomingFileIndex.LastFetchServerTime() ?? DateTime.MinValue);
+
                 var pushChanges = await PushAllLocalChangesAsync(staging);
 
                 _logger.LogInformation("Zakończono pełną synchronizację! ({Pulls}↓/{Pushes}↑)", pullChanges, pushChanges);
             }
             catch (ApiException ex)
             {
-                _logger.LogError(ex, "Błąd komunikacji z serwerem: " + ex.Response);
+                _logger.LogError(ex, "Błąd komunikacji z serwerem: {Ex}", ex.Response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogError(ex, "Brak dostępu do pliku lub folderu: " + ex.Message);
+                _logger.LogError(ex, "Brak dostępu do pliku lub folderu: {Ex}", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Błąd podczas pełnej synchronizacji: {Ex}", ex.Message);
             }
             finally
             {
@@ -467,6 +492,8 @@ namespace CloudDrive.App.ServicesImpl
                 {
                     _logger.LogDebug("Nie zaktualizowano folderu na serwerze, bo nie wykryto zmian: {Path}", path.Full);
                 }
+
+                UpdateLastServerSyncTime(updateResp.ServerTime.DateTime);
             }
             catch (ApiException ex)
             {
@@ -536,6 +563,8 @@ namespace CloudDrive.App.ServicesImpl
                             newSubfileVersionExt.File.FileId);
                     }
                 }
+
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
             }
             catch (ApiException ex)
             {
@@ -573,6 +602,8 @@ namespace CloudDrive.App.ServicesImpl
 
                 var newIndexEntry = LocalCommitedFileIndexEntry.FromFileVersionAndPath(resp.FirstFileVersionInfo, path);
                 _localCommitedFileIndex.Insert(newIndexEntry);
+
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
 
                 _logger.LogInformation("Wysłano folder: {Path}", path.Full);
             }
@@ -628,6 +659,8 @@ namespace CloudDrive.App.ServicesImpl
                     _logger.LogWarning("Ilość usuniętych plików/folderów ({Count}) nie zgadza się z ilością zmienionych plików na serwerze ({ServerCount})",
                         entriesToRemove.Length, resp.AffectedSubfiles.Count);
                 }
+
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
             }
             catch (ApiException ex)
             {
@@ -707,6 +740,8 @@ namespace CloudDrive.App.ServicesImpl
 
                 // przywracanie uprzedniej zawartości folderu nie jest obsługiwane
 
+                UpdateLastServerSyncTime(restoredState.ServerTime.DateTime);
+
                 _logger.LogInformation("Przywrócono folder z serwera: {Path}", newFsPath.Full);
             }
             catch (ApiException ex)
@@ -767,6 +802,8 @@ namespace CloudDrive.App.ServicesImpl
 
                     _logger.LogInformation("Przywrócono folder z serwera: {Path}", newFsPath.Full);
                 }
+
+                UpdateLastServerSyncTime(restoredState.ServerTime.DateTime);
             }
             catch (ApiException ex)
             {
@@ -812,6 +849,8 @@ namespace CloudDrive.App.ServicesImpl
 
                 var newIndexEntry = LocalCommitedFileIndexEntry.FromFileVersionAndPath(resp.FirstFileVersionInfo, path);
                 _localCommitedFileIndex.Insert(newIndexEntry);
+
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
 
                 _logger.LogInformation($"Wysłano plik z: {path.Full}");
             }
@@ -984,6 +1023,8 @@ namespace CloudDrive.App.ServicesImpl
                 {
                     _logger.LogDebug("Nie zaktualizowano pliku na serwerze, bo nie wykryto zmian: {Path}", path.Full);
                 }
+
+                UpdateLastServerSyncTime(updateResp.ServerTime.DateTime);
             }
             catch (ApiException ex)
             {
@@ -1033,6 +1074,8 @@ namespace CloudDrive.App.ServicesImpl
                 var newIndexEntry = LocalCommitedFileIndexEntry.FromFileVersionAndPath(resp.NewFileVersionInfo, newPath);
                 _localCommitedFileIndex.Insert(newIndexEntry);
 
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
+
                 _logger.LogInformation("Zaktualizowano plik na serwerze: {OldPath} -> {NewPath}", oldPath.Full, newPath.Full);
             }
             catch (ApiException ex)
@@ -1065,9 +1108,11 @@ namespace CloudDrive.App.ServicesImpl
 
             try
             {
-                await Api.DeleteFileAsync(indexEntry.FileId);
+                var resp = await Api.DeleteFileAsync(indexEntry.FileId);
 
                 _localCommitedFileIndex.Remove(indexEntry.FileId);
+
+                UpdateLastServerSyncTime(resp.ServerTime.DateTime);
 
                 _logger.LogInformation("Usunięto plik na serwerze: {Path}", path.Full);
             }
@@ -1150,6 +1195,8 @@ namespace CloudDrive.App.ServicesImpl
                 var newIndexEntry = LocalCommitedFileIndexEntry.FromFileVersionAndPath(restoredState.ActiveFileVersionInfo, newFsPath);
                 _localCommitedFileIndex.Insert(newIndexEntry);
 
+                UpdateLastServerSyncTime(restoredState.ServerTime.DateTime);
+
                 _logger.LogInformation("Przywrócono stan pliku z serwera: {Path}", newFsPath.Relative);
             }
             catch (ApiException ex)
@@ -1208,6 +1255,8 @@ namespace CloudDrive.App.ServicesImpl
                     _logger.LogInformation("Pobrano plik do: {Path}", newFsPath.Full);
                 }
 
+                UpdateLastServerSyncTime(restoredState.ServerTime.DateTime);
+
                 _logger.LogInformation("Przywrócono stan pliku z serwera: {Path}", newFsPath.Relative);
             }
             catch (ApiException ex)
@@ -1238,6 +1287,14 @@ namespace CloudDrive.App.ServicesImpl
             return null;
         }
 
+
+        private void UpdateLastServerSyncTime(DateTime syncTime)
+        {
+            if (syncTime > _lastServerSyncTime)
+            {
+                _lastServerSyncTime = syncTime;
+            }
+        }
 
         private WebAPIClient Api
         {

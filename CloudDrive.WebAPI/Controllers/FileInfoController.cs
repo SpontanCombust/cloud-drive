@@ -41,5 +41,15 @@ namespace CloudDrive.WebAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("last-update", Name = "GetLatestFileChangeDateTime")]
+        [ProducesResponseType(typeof(DateTime?), StatusCodes.Status200OK)]
+        public async Task<ActionResult<DateTime?>> GetLatestFileChangeDateTime()
+        {
+            Guid userId = User.GetId();
+
+            var lastChange = await fileInfoService.LatestFileChangeDateTimeForUser(userId);
+            return Ok(lastChange);
+        }
     }
 }

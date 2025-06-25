@@ -94,5 +94,17 @@ namespace CloudDrive.Infrastructure.Services
 
             await dbContext.SaveChangesAsync();
         }
+
+        public async Task<DateTime?> LatestFileChangeDateTimeForUser(Guid userId)
+        {
+            var maxCreatedDate = await dbContext.Files
+                .Where(f => f.UserId == userId)
+                .MaxAsync(f => f.CreatedDate as DateTime?);
+            var maxModifDate = await dbContext.Files
+                .Where(f => f.UserId == userId)
+                .MaxAsync(f => f.ModifiedDate);
+
+            return maxModifDate > maxCreatedDate ? maxModifDate : maxCreatedDate;
+        }
     }
 }

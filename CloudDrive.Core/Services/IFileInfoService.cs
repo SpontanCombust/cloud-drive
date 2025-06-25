@@ -13,5 +13,6 @@ namespace CloudDrive.Core.Services
         // Pass non-null values if you want to update them
         Task<FileDTO> UpdateInfoForFile(Guid fileId, bool? deleted, Guid? activeFileVersionId);
         Task UpdateInfoForManyFiles(FileDTO[] filesToUpdate);
+        Task<DateTime?> LatestFileChangeDateTimeForUser(Guid userId);
     }
 }

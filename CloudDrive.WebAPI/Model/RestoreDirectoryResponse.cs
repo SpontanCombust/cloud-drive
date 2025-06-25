@@ -6,5 +6,6 @@ namespace CloudDrive.WebAPI.Model
     {
         public required FileDTO FileInfo { get; set; }
         public required FileVersionDTO ActiveFileVersionInfo { get; set; }
+        public required DateTime ServerTime { get; set; }
     }
 }
