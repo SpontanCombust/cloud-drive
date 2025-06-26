@@ -32,8 +32,8 @@ namespace CloudDrive.App.ServicesImpl
 
             benchmarkColumns.Add(benchmark.ExecutionDateTime.ToString());
             benchmarkColumns.Add(benchmark.Name);
-            benchmarkColumns.AddRange(benchmark.ExtraInfo);
             benchmarkColumns.Add(benchmark.ElapsedMillis.ToString());
+            benchmarkColumns.AddRange(benchmark.ExtraInfo);
 
             string csvLine = string.Join(";", benchmarkColumns);
 
