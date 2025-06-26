@@ -137,7 +137,6 @@ namespace CloudDrive.App.Views.FileHistory
                 ViewModel.FileIndexTree.Clear();
 
                 var api = _apiFactory.Create();
-                //FIXME should rather make use of the index stored in SyncService
                 SyncAllExtResponse resp = await api.SyncAllExtAsync(true);
 
                 var fvs = resp.CurrentFileVersionsInfosExt;

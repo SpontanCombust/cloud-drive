@@ -46,7 +46,7 @@ namespace CloudDrive.Infrastructure.Services
                 VersionNr = newVersionNr,
                 Md5 = md5Hash,
                 SizeBytes = fileSize,
-                CreatedDate = DateTime.Now.ToUniversalTime()
+                CreatedDate = DateTime.UtcNow
             };
 
             var tracked = (await dbContext.FileVersions.AddAsync(info)).Entity;
@@ -225,7 +225,7 @@ namespace CloudDrive.Infrastructure.Services
             return dtos.ToArray();
         }
 
-        public async Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
+        public async Task<FileVersionDTO?> FindInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize)
         {
             var info = await dbContext.FileVersions
                 .Include(fv => fv.File)
@@ -233,6 +233,22 @@ namespace CloudDrive.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             return info?.ToDto();
+        }
+
+        public async Task<FileVersionDTO?> FindPresentUserFileVersionWithClientPath(Guid userId, string? clientDirPath, string clientFileName)
+        {
+            var q = from f in dbContext.Files
+                    join fv in dbContext.FileVersions
+                    on f.ActiveFileVersionId equals fv.FileVersionId
+                    where f.UserId == userId && 
+                          !f.Deleted &&
+                          clientDirPath == fv.ClientDirPath &&
+                          clientFileName == fv.ClientFileName
+                    select fv;
+
+            var presentFv = await q.FirstOrDefaultAsync();
+
+            return presentFv?.ToDto();
         }
     }
 }

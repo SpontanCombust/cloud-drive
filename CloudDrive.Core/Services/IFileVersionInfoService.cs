@@ -33,6 +33,7 @@ namespace CloudDrive.Core.Services
         /// <summary>
         /// Find if for a user there ever was a file version with these exact same content characteristics
         /// </summary>
-        Task<FileVersionDTO?> GetInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize);
+        Task<FileVersionDTO?> FindInfoForUserFileVersionByUniqueContent(Guid userId, string md5Hash, long fileSize);
+        Task<FileVersionDTO?> FindPresentUserFileVersionWithClientPath(Guid userId, string? clientDirPath, string clientFileName);
     }
 }

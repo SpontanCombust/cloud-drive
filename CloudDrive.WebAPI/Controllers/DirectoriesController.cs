@@ -39,7 +39,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var response = new CreateDirectoryResponse
                 {
                     FileInfo = result.FileInfo,
-                    FirstFileVersionInfo = result.FirstFileVersionInfo
+                    FirstFileVersionInfo = result.FirstFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(response);
@@ -70,7 +71,8 @@ namespace CloudDrive.WebAPI.Controllers
                 {
                     NewFileVersionInfo = result.ActiveFileVersion,
                     NewSubfileVersionInfosExt = result.NewSubfileVersionsExt,
-                    Changed = result.Changed
+                    Changed = result.Changed,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -100,7 +102,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var resp = new DeleteDirectoryResponse
                 {
                     AffectedSubfiles = result.AffectedSubfiles,
-                    AffectedSubfileVersions = result.AffectedSubfileVersions
+                    AffectedSubfileVersions = result.AffectedSubfileVersions,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -142,7 +145,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var resp = new RestoreDirectoryResponse
                 {
                     FileInfo = restoration.FileInfo,
-                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo
+                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);

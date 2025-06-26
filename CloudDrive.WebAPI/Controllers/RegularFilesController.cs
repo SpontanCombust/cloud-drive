@@ -42,7 +42,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var response = new CreateFileResponse
                 {
                     FileInfo = result.FileInfo,
-                    FirstFileVersionInfo = result.FirstFileVersionInfo
+                    FirstFileVersionInfo = result.FirstFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(response);
@@ -141,6 +142,7 @@ namespace CloudDrive.WebAPI.Controllers
                 {
                     NewFileVersionInfo = result.ActiveFileVersion,
                     Changed = result.Changed,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -152,10 +154,10 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
         [HttpDelete("{fileId}", Name = "DeleteFile")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(DeleteFileResponse), StatusCodes.Status200OK)]
         //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] Guid fileId)
+        public async Task<ActionResult<DeleteFileResponse>> Delete([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -166,7 +168,13 @@ namespace CloudDrive.WebAPI.Controllers
             try
             {
                 await fileManagerService.DeleteFile(fileId);
-                return NoContent();
+
+                var resp = new DeleteFileResponse
+                {
+                    ServerTime = DateTime.UtcNow
+                };
+
+                return Ok(resp);
             }
             catch (Exception ex)
             {
@@ -200,7 +208,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var resp = new RestoreFileResponse
                 {
                     FileInfo = restoration.FileInfo,
-                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo
+                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);

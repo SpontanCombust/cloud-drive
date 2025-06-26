@@ -26,7 +26,7 @@ namespace CloudDrive.Infrastructure.Services
                 IsDir = isDir,
                 Deleted = false,
                 ActiveFileVersionId = firstFileVersionId,
-                CreatedDate = DateTime.Now.ToUniversalTime(),
+                CreatedDate = DateTime.UtcNow,
                 ModifiedDate = null
             };
 
@@ -73,7 +73,7 @@ namespace CloudDrive.Infrastructure.Services
 
             tracked.Deleted = deleted ?? tracked.Deleted;
             tracked.ActiveFileVersionId = activeFileVersionId ?? tracked.ActiveFileVersionId;
-            tracked.ModifiedDate = DateTime.Now.ToUniversalTime();
+            tracked.ModifiedDate = DateTime.UtcNow;
             await dbContext.SaveChangesAsync();
 
             return tracked.ToDto();
@@ -88,11 +88,23 @@ namespace CloudDrive.Infrastructure.Services
                 {
                     tracked.Deleted = fileDto.Deleted;
                     tracked.ActiveFileVersionId = fileDto.ActiveFileVersionId;
-                    tracked.ModifiedDate = DateTime.Now.ToUniversalTime();
+                    tracked.ModifiedDate = DateTime.UtcNow;
                 }
             }
 
             await dbContext.SaveChangesAsync();
+        }
+
+        public async Task<DateTime?> LatestFileChangeDateTimeForUser(Guid userId)
+        {
+            var maxCreatedDate = await dbContext.Files
+                .Where(f => f.UserId == userId)
+                .MaxAsync(f => f.CreatedDate as DateTime?);
+            var maxModifDate = await dbContext.Files
+                .Where(f => f.UserId == userId)
+                .MaxAsync(f => f.ModifiedDate);
+
+            return maxModifDate > maxCreatedDate ? maxModifDate : maxCreatedDate;
         }
     }
 }

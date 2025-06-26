@@ -33,7 +33,7 @@ namespace CloudDrive.Infrastructure.Services
                 UserId = new Guid(),
                 Email = email,
                 Password = passwordEncoder.Encode(password),
-                CreatedDate = DateTime.Now.ToUniversalTime()
+                CreatedDate = DateTime.UtcNow
             };
 
             await dbContext.Users.AddAsync(newUser);

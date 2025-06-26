@@ -39,7 +39,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var infoDtos = await fileVersionInfoService.GetInfoForAllActiveUserFileVersions(userId);
 
                 var resp = new SyncAllResponse { 
-                    CurrentFileVersionsInfos = infoDtos 
+                    CurrentFileVersionsInfos = infoDtos,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -67,7 +68,8 @@ namespace CloudDrive.WebAPI.Controllers
 
                 var resp = new SyncAllExtResponse
                 {
-                    CurrentFileVersionsInfosExt = fvExtDtos
+                    CurrentFileVersionsInfosExt = fvExtDtos,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -101,7 +103,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var resp = new SyncFileResponse 
                 { 
                     FileInfo = fileInfo,
-                    CurrentFileVersionInfo = fileVersionInfo 
+                    CurrentFileVersionInfo = fileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
                 return Ok(resp);
             }
