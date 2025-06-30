@@ -12,7 +12,10 @@ namespace CloudDrive.Core.Mappers
                 FileId = file.FileId,
                 UserId = file.UserId,
                 IsDir = file.IsDir,
-                Deleted = file.Deleted
+                Deleted = file.Deleted,
+                ActiveFileVersionId = file.ActiveFileVersionId,
+                CreatedDate = file.CreatedDate,
+                ModifiedDate = file.ModifiedDate,
             };
         }
     }

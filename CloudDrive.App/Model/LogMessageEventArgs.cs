@@ -7,5 +7,6 @@ namespace CloudDrive.App.Model
         public required string CategoryName { get; set; }
         public LogLevel Level { get; set; }
         public required string Message { get; set; }
+        public Exception? Exception { get; set; }
     }
 }

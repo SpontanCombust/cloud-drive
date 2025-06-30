@@ -28,11 +28,20 @@ namespace CloudDrive.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("ActiveFileVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("Deleted")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDir")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");

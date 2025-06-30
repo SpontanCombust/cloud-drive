@@ -3,6 +3,7 @@ using CloudDrive.Infrastructure.Repositories;
 using CloudDrive.Infrastructure.Services;
 using CloudDrive.WebAPI.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
@@ -88,9 +89,17 @@ builder.Services.AddHttpLogging(o => {
     o.LoggingFields = HttpLoggingFields.All;
 });
 
+
+const long MAX_REQUEST_SIZE = 8_589_934_592; // 8 GiB
+
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options.Limits.MaxRequestBodySize = 8_589_934_592; // 8 GiB
+    options.Limits.MaxRequestBodySize = MAX_REQUEST_SIZE;
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = MAX_REQUEST_SIZE;
 });
 
 
@@ -101,6 +110,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var serverAddress = app.Urls.FirstOrDefault() ?? "http://localhost:5189";
+    logger.LogInformation("Swagger available on {Url}", $"{serverAddress}/swagger/index.html");
 }
 
 app.UseAuthentication();

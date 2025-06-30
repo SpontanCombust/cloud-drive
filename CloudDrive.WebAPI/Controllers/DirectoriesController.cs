@@ -1,4 +1,5 @@
-﻿using CloudDrive.Core.Services;
+﻿using CloudDrive.Core.DTO;
+using CloudDrive.Core.Services;
 using CloudDrive.WebAPI.Extensions;
 using CloudDrive.WebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +39,8 @@ namespace CloudDrive.WebAPI.Controllers
                 var response = new CreateDirectoryResponse
                 {
                     FileInfo = result.FileInfo,
-                    FirstFileVersionInfo = result.FirstFileVersionInfo
+                    FirstFileVersionInfo = result.FirstFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(response);
@@ -67,7 +69,10 @@ namespace CloudDrive.WebAPI.Controllers
 
                 var resp = new UpdateDirectoryResponse
                 {
-                    NewFileVersionInfo = result
+                    NewFileVersionInfo = result.ActiveFileVersion,
+                    NewSubfileVersionInfosExt = result.NewSubfileVersionsExt,
+                    Changed = result.Changed,
+                    ServerTime = DateTime.UtcNow
                 };
 
                 return Ok(resp);
@@ -79,10 +84,10 @@ namespace CloudDrive.WebAPI.Controllers
         }
 
         [HttpDelete("{fileId}", Name = "DeleteDirectory")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(DeleteDirectoryResponse), StatusCodes.Status200OK)]
         //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] Guid fileId)
+        public async Task<ActionResult<DeleteDirectoryResponse>> Delete([FromRoute] Guid fileId)
         {
             Guid userId = User.GetId();
             if (!await fileInfoService.FileBelongsToUser(fileId, userId))
@@ -92,8 +97,59 @@ namespace CloudDrive.WebAPI.Controllers
 
             try
             {
-                await fileManagerService.DeleteDirectory(fileId);
-                return NoContent();
+                var result = await fileManagerService.DeleteDirectory(fileId);
+
+                var resp = new DeleteDirectoryResponse
+                {
+                    AffectedSubfiles = result.AffectedSubfiles,
+                    AffectedSubfileVersions = result.AffectedSubfileVersions,
+                    ServerTime = DateTime.UtcNow
+                };
+
+                return Ok(resp);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("{fileId}/restore", Name = "RestoreDirectory")]
+        [ProducesResponseType(typeof(RestoreDirectoryResponse), StatusCodes.Status200OK)]
+        public async Task<ActionResult<RestoreDirectoryResponse>> Restore([FromRoute] Guid fileId, [FromQuery] RestoreDirectoryRequestQuery req)
+        {
+            if (req.RestoreSubfiles)
+            {
+                return StatusCode(StatusCodes.Status501NotImplemented, "Restoring subfiles is not supported");
+            }
+
+            Guid userId = User.GetId();
+
+            if (!await fileInfoService.FileBelongsToUser(fileId, userId))
+            {
+                return Unauthorized("You do not have permission to modify this directory.");
+            }
+
+            try
+            {
+                RestoreDirectoryResultDTO restoration;
+                if (req.FileVersionId != null)
+                {
+                    restoration = await fileManagerService.RestoreDirectory(fileId, req.FileVersionId.GetValueOrDefault());
+                }
+                else
+                {
+                    restoration = await fileManagerService.RestoreDirectory(fileId);
+                }
+
+                var resp = new RestoreDirectoryResponse
+                {
+                    FileInfo = restoration.FileInfo,
+                    ActiveFileVersionInfo = restoration.ActiveFileVersionInfo,
+                    ServerTime = DateTime.UtcNow
+                };
+
+                return Ok(resp);
             }
             catch (Exception ex)
             {

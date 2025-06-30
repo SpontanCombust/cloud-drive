@@ -1,13 +1,26 @@
 ﻿using CloudDrive.App.Services;
 using Newtonsoft.Json;
 using System.IO;
+using CloudDrive.App.Model;
 
 namespace CloudDrive.App.ServicesImpl
 {
     internal class UserSettings
     {
-        public Uri? ServerUrl { get; set; }
-        public string? WatchedFolderPath { get; set; }
+        public Uri? ServerUrl { get; set; } = null;
+        public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
+        public int SyncIntervalSeconds { get; set; } = 10; // domyślnie 10 sekund
+
+
+        private static string DefaultWatchedFolderPath
+        {
+            get
+            {
+                var docsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "CloudDrive");
+                Directory.CreateDirectory(docsPath); // Ensure the directory exists
+                return docsPath;
+            }
+        }
     }
 
     public class AppDataUserSettingsService : IUserSettingsService
@@ -19,20 +32,22 @@ namespace CloudDrive.App.ServicesImpl
             _userSettings = new UserSettings();
         }
 
-
         public Uri? ServerUrl { 
             get => _userSettings.ServerUrl; 
             set => _userSettings.ServerUrl = value; 
         }
-        public string? WatchedFolderPath {
+        public string WatchedFolderPath {
             get => _userSettings.WatchedFolderPath; 
             set => _userSettings.WatchedFolderPath = value; 
         }
-
-
         public bool SettingsWereSaved()
         {
             return File.Exists(SettingsFilePath);
+        }
+        public int SyncIntervalSeconds
+        {
+            get => _userSettings.SyncIntervalSeconds;
+            set => _userSettings.SyncIntervalSeconds = value;
         }
 
         public Task SaveSettingsAsync()
@@ -47,13 +62,22 @@ namespace CloudDrive.App.ServicesImpl
             if (File.Exists(SettingsFilePath))
             {
                 string json = File.ReadAllText(SettingsFilePath);
-                var savedSettings = JsonConvert.DeserializeObject<UserSettings>(json);
-
-                if (savedSettings != null)
+                if (string.IsNullOrWhiteSpace(json))
                 {
-                    _userSettings = savedSettings;
+                    _userSettings = new UserSettings(); // Reset to default if file is empty
+                }
+                else
+                {
+                    var savedSettings = JsonConvert.DeserializeObject<UserSettings>(json);
+
+                    if (savedSettings != null)
+                    {
+                        _userSettings = savedSettings;
+                    }
                 }
             }
+
+
 
             return Task.CompletedTask;
         }

@@ -1,4 +1,10 @@
-﻿using System;
+﻿using CloudDrive.App.Model;
+using CloudDrive.App.Services;
+using CloudDrive.App.ServicesImpl;
+using CloudDrive.App.Utils;
+using CloudDrive.App.ViewModels;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,9 +18,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using CloudDrive.App.Model;
-using CloudDrive.App.Services;
-using CloudDrive.App.ServicesImpl;
 
 
 
@@ -28,14 +31,18 @@ namespace CloudDrive.App.Views
         private readonly IViewLocator _viewLocator;
         private readonly IFileSystemWatcher _fileSystemWatcher;
         private readonly IBenchmarkService _benchmarkService;
+        private readonly IAutoSyncService _autoSyncService;
+
+        public readonly StatusPageViewModel ViewModel;
 
         public StatusPage(
-            ILogRelayService logRelay, 
-            ILogHistoryService logHistory, 
-            ISyncService syncService, 
-            IViewLocator viewLocator, 
+            ILogRelayService logRelay,
+            ILogHistoryService logHistory,
+            ISyncService syncService,
+            IViewLocator viewLocator,
             IFileSystemWatcher fileSystemWatcher,
-            IBenchmarkService benchmarkService)
+            IBenchmarkService benchmarkService,
+            IAutoSyncService autoSyncService)
         {
             _logRelay = logRelay;
             _logHistory = logHistory;
@@ -43,12 +50,20 @@ namespace CloudDrive.App.Views
             _viewLocator = viewLocator;
             _fileSystemWatcher = fileSystemWatcher;
             _benchmarkService = benchmarkService;
+            _autoSyncService = autoSyncService;
+
+            ViewModel = new StatusPageViewModel();
+            DataContext = ViewModel;
 
             InitializeComponent();
 
             logRelay.LogAdded += onLogAdded;
-            foreach(var e in logHistory.GetHistory() ) {
-                LogTextBox.Text += e.Message + Environment.NewLine;
+            foreach (var e in logHistory.GetHistory())
+            {
+                if (e.Level >= LogLevel.Information || ViewModel.DebugLogsEnabled)
+                {
+                    ViewModel.Logs += e.Message + Environment.NewLine;
+                }
             }
 
             Task.Run(async () =>
@@ -68,10 +83,11 @@ namespace CloudDrive.App.Views
                 try
                 {
                     _fileSystemWatcher.Start();
+                    _autoSyncService.StartSync();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Nie udało się uruchomić obserwatora: " + ex.Message);
+                    MessageBox.Show("Nie udało się uruchomić obserwatora lub auto-sync: " + ex.Message);
                 }
             });
         }
@@ -80,18 +96,27 @@ namespace CloudDrive.App.Views
         {
             Dispatcher.Invoke(() =>
             {
-                LogTextBox.Text += e.Message + Environment.NewLine;
+                if (e.Level >= LogLevel.Information || ViewModel.DebugLogsEnabled)
+                {
+                    ViewModel.Logs += e.Message + Environment.NewLine;
+                }
             });
         }
 
-        private void FullSyncButton_Click(object sender, RoutedEventArgs e)
+        private async void FullSyncButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                _syncService.SynchronizeAllFilesAsync();
+                ViewModel.SyncIsInProgress = true;
+                await _syncService.SynchronizeAllFilesAsync();
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 MessageBox.Show("Błąd w synchronizacji: " + ex.Message);
+            }
+            finally
+            {
+                ViewModel.SyncIsInProgress = false;
             }
         }
 
@@ -100,11 +125,13 @@ namespace CloudDrive.App.Views
             try
             {
                 _fileSystemWatcher.Stop();
+                _autoSyncService.StopSync();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Błąd zatrzymywania obserwatora: " + ex.Message);
             }
+
             var loginPage = _viewLocator.LoginPage();
 
             if (NavigationService != null)
@@ -119,7 +146,7 @@ namespace CloudDrive.App.Views
 
         private void clear_Click(object sender, RoutedEventArgs e)
         {
-            LogTextBox.Clear();
+            ViewModel.Logs = string.Empty; 
         }
 
         private void ViewBenchmarkButton_Click(object sender, RoutedEventArgs e)
@@ -132,6 +159,13 @@ namespace CloudDrive.App.Views
             {
                 MessageBox.Show("Błąd otwarcia pliku: " + ex.Message);
             }
+        }
+
+        private async void FileVersionHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            var fileHistoryWindow = _viewLocator.FileHistoryWindow();
+            await fileHistoryWindow.FillFileIndexTree();
+            fileHistoryWindow.Show();
         }
     }
 }

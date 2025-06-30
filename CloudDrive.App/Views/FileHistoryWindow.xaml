@@ -1,0 +1,152 @@
+﻿<Window x:Class="CloudDrive.App.Views.FileHistory.FileHistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CloudDrive.App.Views.FileHistory"
+        xmlns:vm="clr-namespace:CloudDrive.App.ViewModels"
+        mc:Ignorable="d"
+        Title="CloudDrive - historia plików" Height="500" Width="1000"
+        Icon="/Assets/cloud-drive.ico"
+        d:DataContext="{d:DesignInstance Type=vm:FileHistoryWindowViewModel}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="30*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="69*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- File Tree View -->
+            <TreeView x:Name="FileIndexTreeView" DataContext="{Binding Path=FileIndexTree}"
+                      Grid.Row="0" 
+                      SelectedItemChanged="FileIndexTreeView_SelectedItemChanged">
+                <TreeView.Resources>
+                    <!-- Template for all file items -->
+                    <HierarchicalDataTemplate DataType="{x:Type vm:FileIndexTreeItemViewModel}" 
+                                              ItemsSource="{Binding Path=Subindices}">
+                        <TextBlock Text="{Binding Path=FileName}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=IsValid}" Value="False">
+                                            <Setter Property="Foreground" Value="Gray"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </HierarchicalDataTemplate>
+                </TreeView.Resources>
+
+                <!-- Active Files Branch -->
+                <TreeViewItem ItemsSource="{Binding Path=Active}" IsExpanded="True">
+                    <TreeViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Pliki" FontWeight="Bold"/>
+                        </DataTemplate>
+                    </TreeViewItem.HeaderTemplate>
+                </TreeViewItem>
+
+                <!-- Spacing -->
+                <Rectangle Height="0" Margin="0,5,0,5"/>
+
+                <!-- Archived Files Branch -->
+                <TreeViewItem ItemsSource="{Binding Path=Archived}">
+                    <TreeViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="Archiwum" FontWeight="Bold" Foreground="Gray"/>
+                        </DataTemplate>
+                    </TreeViewItem.HeaderTemplate>
+                </TreeViewItem>
+            </TreeView>
+
+            <Button Name="RefreshButton"
+                Grid.Row="1" 
+                Content="Odśwież" 
+                Click="RefreshButton_Click"
+                Margin="10"
+                Padding="20,5"
+                HorizontalAlignment="Right"/>
+        </Grid>
+        
+
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
+
+        <!-- File Versions List -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <ListView x:Name="FileVersionListView" 
+                      Grid.Row="0"
+                      ItemsSource="{Binding Path=FileVersionItems}"
+                      SelectedItem="{Binding Path=SelectedFileVersionItem}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Path=Active}" Value="True">
+                                <Setter Property="Background" Value="#E8F5E9"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Wersja" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=VersionNr}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Ścieżka" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=ClientPath}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Rozmiar (B)" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=SizeBytes}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Data utworzenia" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=CreatedDate}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="MD5" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=Md5}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <Button Grid.Row="1" 
+                    Content="Przywróć wersję" 
+                    Click="OnApplyVersionClick"
+                    IsEnabled="{Binding Path=IsRestorableFileVersionItemSelected}"
+                    Margin="10"
+                    Padding="20,5"
+                    HorizontalAlignment="Right"/>
+        </Grid>
+        
+    </Grid>
+</Window>
