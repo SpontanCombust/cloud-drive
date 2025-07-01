@@ -11,14 +11,20 @@ namespace CloudDrive.App.ServicesImpl
     {
         private readonly FileSystemWatcher _watcher;
         private readonly ISyncService _syncService;
+        private readonly ISyncSchedulerService _syncScheduler;
         private readonly ILogger<FileSystemSyncWatcher> _logger;
         private readonly string _watchedFolder;
 
         private bool _disposed = false;
 
-        public FileSystemSyncWatcher(ISyncService syncService, IUserSettingsService settings, ILogger<FileSystemSyncWatcher> logger)
+        public FileSystemSyncWatcher(
+            ISyncService syncService,
+            ISyncSchedulerService syncScheduler,
+            IUserSettingsService settings, 
+            ILogger<FileSystemSyncWatcher> logger)
         {
             _syncService = syncService;
+            _syncScheduler = syncScheduler;
             _watchedFolder = settings.WatchedFolderPath ?? throw new ArgumentException("Ścieżka nie została ustawiona.");
             _logger = logger;
 
@@ -96,24 +102,24 @@ namespace CloudDrive.App.ServicesImpl
                     if (isDir)
                     {
                         // nowy folder - synchronizuj go
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out var _))
                         {
-                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                            await _syncScheduler.ScheduleUploadModifiedFolderToRemote(path);
                         }
                         else
                         {
-                            await _syncService.UploadNewFolderRecursivelyAsync(path);
+                            await _syncScheduler.ScheduleUploadNewFolderRecursively(path);
                         }
                     }
                     else
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out var _))
                         {
-                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                            await _syncScheduler.ScheduleUploadModifiedFileToRemote(path);
                         }
                         else
                         {
-                            await _syncService.UploadNewFileToRemoteAsync(path);
+                            await _syncScheduler.ScheduleUploadNewFileToRemote(path);
                         }
                     }
                 }
@@ -140,11 +146,11 @@ namespace CloudDrive.App.ServicesImpl
 
                     if (path.IsDirectory)
                     {
-                        await _syncService.RemoveFoldersFromRemoteAsync(path);
+                        await _syncScheduler.ScheduleRemoveFoldersFromRemote(path);
                     }
                     else
                     {
-                        await _syncService.RemoveFileFromRemoteAsync(path);
+                        await _syncScheduler.ScheduleRemoveFileFromRemote(path);
                     }
                 }
                 catch (Exception ex)
@@ -166,16 +172,16 @@ namespace CloudDrive.App.ServicesImpl
 
                     if (isDir)
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out var _))
                         {
-                            await _syncService.UploadModifiedFolderToRemoteAsync(path);
+                            await _syncScheduler.ScheduleUploadModifiedFolderToRemote(path);
                         }
                     }
                     else
                     {
-                        if (_syncService.TryGetFileId(path, out var fileId))
+                        if (_syncService.TryGetFileId(path, out var _))
                         {
-                            await _syncService.UploadModifiedFileToRemoteAsync(path);
+                            await _syncScheduler.ScheduleUploadModifiedFileToRemote(path);
                         }
                     }
                 }
@@ -199,16 +205,16 @@ namespace CloudDrive.App.ServicesImpl
 
                     if (isDir)
                     {
-                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        if (_syncService.TryGetFileId(oldPath, out var _))
                         {
-                            await _syncService.UploadRenamedFolderToRemoteAsync(oldPath, newPath);
+                            await _syncScheduler.ScheduleUploadRenamedFolderToRemote(oldPath, newPath);
                         }
                     }
                     else
                     {
-                        if (_syncService.TryGetFileId(oldPath, out var fileId))
+                        if (_syncService.TryGetFileId(oldPath, out var _))
                         {
-                            await _syncService.UploadRenamedFileToRemoteAsync(oldPath, newPath);
+                            await _syncScheduler.ScheduleUploadRenamedFileToRemote(oldPath, newPath);
                         }
                     }
                 }

@@ -27,7 +27,7 @@ namespace CloudDrive.App.Views
     {
         private readonly ILogRelayService _logRelay;
         private readonly ILogHistoryService _logHistory;
-        private readonly ISyncService _syncService;
+        private readonly ISyncSchedulerService _syncScheduler;
         private readonly IViewLocator _viewLocator;
         private readonly IFileSystemWatcher _fileSystemWatcher;
         private readonly IBenchmarkService _benchmarkService;
@@ -38,7 +38,7 @@ namespace CloudDrive.App.Views
         public StatusPage(
             ILogRelayService logRelay,
             ILogHistoryService logHistory,
-            ISyncService syncService,
+            ISyncSchedulerService syncScheduler,
             IViewLocator viewLocator,
             IFileSystemWatcher fileSystemWatcher,
             IBenchmarkService benchmarkService,
@@ -46,7 +46,7 @@ namespace CloudDrive.App.Views
         {
             _logRelay = logRelay;
             _logHistory = logHistory;
-            _syncService = syncService;
+            _syncScheduler = syncScheduler;
             _viewLocator = viewLocator;
             _fileSystemWatcher = fileSystemWatcher;
             _benchmarkService = benchmarkService;
@@ -73,7 +73,7 @@ namespace CloudDrive.App.Views
 
                 try
                 {
-                    await _syncService.SynchronizeAllFilesAsync();
+                    await _syncScheduler.ScheduleSynchronizeAllFiles();
                 }
                 catch (Exception ex)
                 {
@@ -108,7 +108,7 @@ namespace CloudDrive.App.Views
             try
             {
                 ViewModel.SyncIsInProgress = true;
-                await _syncService.SynchronizeAllFilesAsync();
+                await _syncScheduler.ScheduleSynchronizeAllFiles();
             }
             catch (Exception ex)
             {

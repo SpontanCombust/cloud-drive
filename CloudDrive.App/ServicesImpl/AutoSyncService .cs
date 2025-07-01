@@ -10,6 +10,7 @@ namespace CloudDrive.App.ServicesImpl
     public class AutoSyncService : IAutoSyncService, IDisposable
     {
         private readonly ISyncService _syncService;
+        private readonly ISyncSchedulerService _syncScheduler;
         private readonly IFileSystemWatcher _fileSystemWatcher;
         private readonly ILogger<AutoSyncService> _logger;
         private readonly IUserSettingsService _userSettings;
@@ -20,11 +21,13 @@ namespace CloudDrive.App.ServicesImpl
 
         public AutoSyncService(
             ISyncService syncService,
+            ISyncSchedulerService syncScheduler,
             IFileSystemWatcher fileSystemWatcher,
             ILogger<AutoSyncService> logger, 
             IUserSettingsService userSettings)
         {
             _syncService = syncService;
+            _syncScheduler = syncScheduler;
             _fileSystemWatcher = fileSystemWatcher;
             _logger = logger;
             _userSettings = userSettings;
@@ -79,7 +82,7 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogInformation("AutoSync: rozpoczęcie synchronizacji o {Time}...", DateTime.Now);
 
                 _fileSystemWatcher.Stop();
-                await _syncService.SynchronizeAllFilesAsync();
+                await _syncScheduler.ScheduleSynchronizeAllFiles();
                 _fileSystemWatcher.Start();
 
                 _lastSuccessfulSync = DateTime.Now;

@@ -46,6 +46,7 @@ namespace CloudDrive.App
                 })
                 .AddSingleton<ISyncService, SyncService>()
                 .AddSingleton<IAutoSyncService, AutoSyncService>()
+                .AddSingleton<ISyncSchedulerService, SyncSchedulerService>()
                 .AddSingleton<ILogRelayService>(logRelay)
                 .AddSingleton<ILogHistoryService, InMemeoryLogHistoryService>()
                 .AddSingleton<IFileSystemWatcher, FileSystemSyncWatcher>()

@@ -22,16 +22,20 @@ namespace CloudDrive.App.Views.FileHistory
     {
         private readonly WebAPIClientFactory _apiFactory;
         private readonly ILogger<FileHistoryWindow> _logger;
-        private readonly ISyncService _syncService;
+        private readonly ISyncSchedulerService _syncScheduler;
         private readonly IFileSystemWatcher _fsWatcher;
 
         public FileHistoryWindowViewModel ViewModel;
 
-        public FileHistoryWindow(WebAPIClientFactory apiFactory, ILogger<FileHistoryWindow> logger, ISyncService syncService, IFileSystemWatcher fsWatcher)
+        public FileHistoryWindow(
+            WebAPIClientFactory apiFactory, 
+            ILogger<FileHistoryWindow> logger, 
+            ISyncSchedulerService syncScheduler, 
+            IFileSystemWatcher fsWatcher)
         {
             _apiFactory = apiFactory;
             _logger = logger;
-            _syncService = syncService;
+            _syncScheduler = syncScheduler;
             _fsWatcher = fsWatcher;
 
             ViewModel = new FileHistoryWindowViewModel();
@@ -97,11 +101,11 @@ namespace CloudDrive.App.Views.FileHistory
 
                 if (ViewModel.SelectedFileItem.IsDir)
                 {
-                    await _syncService.RestoreFolderFromRemoteAsync(ViewModel.SelectedFileItem.FileId, ViewModel.SelectedFileVersionItem.FileVersionId);
+                    await _syncScheduler.ScheduleRestoreFolderFromRemote(ViewModel.SelectedFileItem.FileId, ViewModel.SelectedFileVersionItem.FileVersionId);
                 }
                 else
                 {
-                    await _syncService.RestoreFileFromRemoteAsync(ViewModel.SelectedFileItem.FileId, ViewModel.SelectedFileVersionItem.FileVersionId);
+                    await _syncScheduler.ScheduleRestoreFileFromRemote(ViewModel.SelectedFileItem.FileId, ViewModel.SelectedFileVersionItem.FileVersionId);
                 }
 
                 MessageBox.Show($"Przywrócono wersję {ViewModel.SelectedFileVersionItem.VersionNr}!", "Success",
