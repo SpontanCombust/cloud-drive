@@ -5,6 +5,7 @@ namespace CloudDrive.App.Services
     public interface ISyncSchedulerService
     {
         bool IsBusy { get; }
+        event EventHandler<bool>? BusyStatusChanged;
 
         Task ScheduleSynchronizeAllFiles();
         Task ScheduleUploadNewFileToRemote(WatchedFileSystemPath path);

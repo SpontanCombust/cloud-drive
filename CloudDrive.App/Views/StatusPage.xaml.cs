@@ -23,7 +23,7 @@ using System.Windows.Shapes;
 
 namespace CloudDrive.App.Views
 {
-    public partial class StatusPage : Page
+    public partial class StatusPage : Page, IDisposable
     {
         private readonly ILogRelayService _logRelay;
         private readonly ILogHistoryService _logHistory;
@@ -66,6 +66,8 @@ namespace CloudDrive.App.Views
                 }
             }
 
+            _syncScheduler.BusyStatusChanged += OnSyncSchedulerBusyStatusChanged;
+
             Task.Run(async () =>
             {
                 // daj czas na pokazanie okna
@@ -101,6 +103,11 @@ namespace CloudDrive.App.Views
                     ViewModel.Logs += e.Message + Environment.NewLine;
                 }
             });
+        }
+
+        private void OnSyncSchedulerBusyStatusChanged(object? sender, bool status)
+        {
+            ViewModel.SyncIsInProgress = status;
         }
 
         private async void FullSyncButton_Click(object sender, RoutedEventArgs e)
@@ -166,6 +173,13 @@ namespace CloudDrive.App.Views
             var fileHistoryWindow = _viewLocator.FileHistoryWindow();
             await fileHistoryWindow.FillFileIndexTree();
             fileHistoryWindow.Show();
+        }
+
+
+        public void Dispose()
+        {
+            _logRelay.LogAdded -= onLogAdded;
+            _syncScheduler.BusyStatusChanged -= OnSyncSchedulerBusyStatusChanged;
         }
     }
 }

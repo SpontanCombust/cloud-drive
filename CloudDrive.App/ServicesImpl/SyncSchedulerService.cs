@@ -31,6 +31,8 @@ namespace CloudDrive.App.ServicesImpl
 
         public bool IsBusy => _isWorkInProgress;
 
+        public event EventHandler<bool>? BusyStatusChanged;
+
 
         public Task ScheduleSynchronizeAllFiles()
         {
@@ -134,6 +136,7 @@ namespace CloudDrive.App.ServicesImpl
         private async void DoScheduledWork()
         {
             _isWorkInProgress = true;
+            BusyStatusChanged?.Invoke(this, _isWorkInProgress);
 
             // execute all pull tasks one by one
             while (_pullQueue.TryDequeue(out var task))
@@ -165,6 +168,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
             _isWorkInProgress = false;
+            BusyStatusChanged?.Invoke(this, _isWorkInProgress);
         }
     }
 }
