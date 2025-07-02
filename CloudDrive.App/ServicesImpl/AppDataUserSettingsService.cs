@@ -9,7 +9,8 @@ namespace CloudDrive.App.ServicesImpl
     {
         public Uri? ServerUrl { get; set; } = null;
         public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
-        public int SyncIntervalSeconds { get; set; } = 10; // domyślnie 10 sekund
+        public int SyncIntervalSeconds { get; set; } = 5; // domyślnie 5 sekund
+        public int ConcurrentSyncRequestLimit { get; set; } = 50;
 
 
         private static string DefaultWatchedFolderPath
@@ -32,22 +33,30 @@ namespace CloudDrive.App.ServicesImpl
             _userSettings = new UserSettings();
         }
 
-        public Uri? ServerUrl { 
+        public Uri? ServerUrl 
+        { 
             get => _userSettings.ServerUrl; 
             set => _userSettings.ServerUrl = value; 
         }
-        public string WatchedFolderPath {
+        public string WatchedFolderPath 
+        {
             get => _userSettings.WatchedFolderPath; 
             set => _userSettings.WatchedFolderPath = value; 
-        }
-        public bool SettingsWereSaved()
-        {
-            return File.Exists(SettingsFilePath);
         }
         public int SyncIntervalSeconds
         {
             get => _userSettings.SyncIntervalSeconds;
             set => _userSettings.SyncIntervalSeconds = value;
+        }
+        public int ConcurrentSyncRequestLimit
+        {
+            get => _userSettings.ConcurrentSyncRequestLimit;
+            set => _userSettings.ConcurrentSyncRequestLimit = value;
+        }
+
+        public bool SettingsWereSaved()
+        {
+            return File.Exists(SettingsFilePath);
         }
 
         public Task SaveSettingsAsync()
