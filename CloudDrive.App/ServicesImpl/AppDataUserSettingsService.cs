@@ -10,7 +10,7 @@ namespace CloudDrive.App.ServicesImpl
         public Uri? ServerUrl { get; set; } = null;
         public string WatchedFolderPath { get; set; } = DefaultWatchedFolderPath;
         public int SyncIntervalSeconds { get; set; } = 5; // domyślnie 5 sekund
-        public int ConcurrentSyncRequestLimit { get; set; } = 50;
+        public int ConcurrentSyncRequestLimit { get; set; } = int.Max(Environment.ProcessorCount - 1, 1); // domyślnie ilość rdzeni CPU minus 1
 
 
         private static string DefaultWatchedFolderPath
@@ -51,7 +51,7 @@ namespace CloudDrive.App.ServicesImpl
         public int ConcurrentSyncRequestLimit
         {
             get => _userSettings.ConcurrentSyncRequestLimit;
-            set => _userSettings.ConcurrentSyncRequestLimit = value;
+            set => _userSettings.ConcurrentSyncRequestLimit = int.Max(value, 1);
         }
 
         public bool SettingsWereSaved()
