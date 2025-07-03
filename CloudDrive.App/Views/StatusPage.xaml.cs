@@ -114,7 +114,7 @@ namespace CloudDrive.App.Views
         {
             try
             {
-                await _syncService.SynchronizeAllFilesAsync();
+                await Task.Run(_syncService.SynchronizeAllFilesAsync);
             }
             catch (Exception ex)
             {

@@ -85,7 +85,7 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogInformation("AutoSync: rozpoczęcie synchronizacji o {Time}...", DateTime.Now);
 
                 _fileSystemWatcher.Stop();
-                await _syncService.SynchronizeAllFilesAsync();
+                await Task.Run(_syncService.SynchronizeAllFilesAsync);
                 _fileSystemWatcher.Start();
 
                 _lastSuccessfulSync = DateTime.Now;
