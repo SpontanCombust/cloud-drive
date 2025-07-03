@@ -672,13 +672,12 @@ namespace CloudDrive.App.ServicesImpl
                 var resp = await Api.DeleteDirectoryAsync(existingIndexEntry.FileId);
                 _logger.LogInformation("Usunięto folder z serwera: {Path}", path.Full);
 
-                _localCommitedFileIndex.Remove(existingIndexEntry.FileId);
-                _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
-
-
                 var entriesToRemove = _localCommitedFileIndex
                     .FindInDirectory(existingIndexEntry.FileId)
                     .ToArray();
+
+                _localCommitedFileIndex.Remove(existingIndexEntry.FileId);
+                _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
 
                 foreach (var e in entriesToRemove)
                 {
@@ -721,12 +720,12 @@ namespace CloudDrive.App.ServicesImpl
                     Directory.Delete(path.Full, true);
                     _logger.LogInformation("Usunięto folder lokalnie: {Path}", path.Full);
 
-                    _localCommitedFileIndex.Remove(commitedLocalEntry.FileId);
-                    _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
-
                     var entriesToRemove = _localCommitedFileIndex
                         .FindInDirectory(commitedLocalEntry.FileId)
                         .ToArray();
+
+                    _localCommitedFileIndex.Remove(commitedLocalEntry.FileId);
+                    _logger.LogInformation("Usunięto informacje o folderze: {Path}", path.Full);
 
                     foreach (var e in entriesToRemove)
                     {
