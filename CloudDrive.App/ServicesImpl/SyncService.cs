@@ -337,6 +337,8 @@ namespace CloudDrive.App.ServicesImpl
                 return;
             }
 
+            var bench = _benchmarkService.StartBenchmark("Nowy folder (rekurencyjnie)", folderPath.Relative);
+
             try
             {
                 await UploadNewFolderToRemoteAsync(folderPath);
@@ -351,6 +353,10 @@ namespace CloudDrive.App.ServicesImpl
             {
                 _logger.LogError(ex, "Nieoczekiwany błąd przy tworzeniu folderu: {Path}", folderPath.Full);
                 return;
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
             }
 
             try
@@ -388,6 +394,10 @@ namespace CloudDrive.App.ServicesImpl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd podczas przetwarzania zawartości folderu: {Path}", folderPath.Full);
+            }
+            finally
+            {
+                _benchmarkService.StopBenchmark(bench);
             }
         }
 
