@@ -21,5 +21,8 @@ namespace CloudDrive.App.Services
         Task RestoreFolderFromRemoteAsync(Guid fileId, Guid fileVersionId);
         bool TryGetFileId(WatchedFileSystemPath path, out Guid fileId);
         WatchedFileSystemPath? FindWatchedFileSystemPathByFullPath(string rawFullPath);
+
+        bool IsBusy { get; }
+        event EventHandler<bool>? IsBusyChanged;
     }
 }

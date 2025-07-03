@@ -22,7 +22,10 @@ namespace CloudDrive.App.ServicesImpl
 
         private DateTime _lastServerSyncTime;
         private readonly SemaphoreSlim _syncTaskThrottler;
-        
+        private readonly int _maxSyncTasks;
+
+        public event EventHandler<bool>? IsBusyChanged;
+
         public SyncService(
             WebAPIClientFactory apiFactory, 
             IUserSettingsService userSettingsService, 
@@ -37,8 +40,12 @@ namespace CloudDrive.App.ServicesImpl
             _localCommitedFileIndex = fileIndex;
 
             _lastServerSyncTime = DateTime.MinValue;
-            _syncTaskThrottler = new SemaphoreSlim(userSettingsService.ConcurrentSyncRequestLimit);
+            _maxSyncTasks = userSettingsService.ConcurrentSyncRequestLimit;
+            _syncTaskThrottler = new SemaphoreSlim(_maxSyncTasks, _maxSyncTasks);
         }
+
+
+        public bool IsBusy => _syncTaskThrottler.CurrentCount < _maxSyncTasks;
 
 
         public async Task<bool> ShouldSynchronizeWithRemoteAsync()
@@ -386,7 +393,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task DownloadNewFolderFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath path = incomingRemoteEntry.GetWatchedFileSystemPath();
 
@@ -417,7 +424,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -429,7 +436,7 @@ namespace CloudDrive.App.ServicesImpl
         /// </summary>
         private async Task DownloadModifiedFolderFromRemoteAsync(LocalCommitedFileIndexEntry commitedLocalEntry, RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath prevPath = commitedLocalEntry.GetWatchedFileSystemPath();
             WatchedFileSystemPath newPath = incomingRemoteEntry.GetWatchedFileSystemPath();
@@ -477,7 +484,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -495,7 +502,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Aktualizacja folderu", path.Relative);
 
@@ -533,7 +540,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -551,7 +558,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Zmiana nazwy folderu", oldPath.Relative);
 
@@ -607,7 +614,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -622,7 +629,7 @@ namespace CloudDrive.App.ServicesImpl
                 throw new Exception($"Folder nie istnieje lub nie jest folderem: {path.Full}");
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Nowy folder", path.Relative);
 
@@ -650,7 +657,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
 
             return true;
@@ -666,7 +673,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Usuwanie folderu", path.Relative);
 
@@ -709,7 +716,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
 
             return true;
@@ -717,7 +724,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task RemoveFolderLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath path = commitedLocalEntry.GetWatchedFileSystemPath();
 
@@ -755,7 +762,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -772,7 +779,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Przywrócenie folderu");
 
@@ -809,7 +816,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -818,7 +825,7 @@ namespace CloudDrive.App.ServicesImpl
         /// </summary>
         public async Task RestoreFolderFromRemoteAsync(Guid fileId, Guid fileVersionId)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Przywrócenie wersji folderu");
 
@@ -873,7 +880,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -894,7 +901,7 @@ namespace CloudDrive.App.ServicesImpl
                 throw new Exception("Plik nie istnieje");
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Nowy plik", path.Relative);
 
@@ -927,7 +934,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
 
             return true;
@@ -935,7 +942,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task DownloadNewFileFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath path = incomingRemoteEntry.GetWatchedFileSystemPath();
 
@@ -972,13 +979,13 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
         private async Task DownloadModifiedFileFromRemoteAsync(LocalCommitedFileIndexEntry commitedLocalEntry, RemoteIncomingFileIndexEntry incomingRemoteEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath prevPath = commitedLocalEntry.GetWatchedFileSystemPath();
             WatchedFileSystemPath newPath = incomingRemoteEntry.GetWatchedFileSystemPath();
@@ -1032,7 +1039,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -1073,7 +1080,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Aktualizacja pliku", path.Relative);
 
@@ -1110,7 +1117,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
 
             return true;
@@ -1136,7 +1143,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Zmiana nazwy pliku", oldPath.Relative);
 
@@ -1167,7 +1174,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -1181,7 +1188,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Usuwanie pliku", path.Relative);
 
@@ -1208,7 +1215,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
 
             return true;
@@ -1216,7 +1223,7 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task RemoveFileLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             WatchedFileSystemPath path = commitedLocalEntry.GetWatchedFileSystemPath();
 
@@ -1245,7 +1252,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -1262,7 +1269,7 @@ namespace CloudDrive.App.ServicesImpl
             }
 
 
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Przywrócenie pliku");
 
@@ -1305,7 +1312,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -1314,7 +1321,7 @@ namespace CloudDrive.App.ServicesImpl
         /// </summary>
         public async Task RestoreFileFromRemoteAsync(Guid fileId, Guid fileVersionId)
         {
-            await _syncTaskThrottler.WaitAsync();
+            await ReserveTaskSlot();
 
             var bench = _benchmarkService.StartBenchmark("Przywrócenie wersji pliku");
 
@@ -1368,7 +1375,7 @@ namespace CloudDrive.App.ServicesImpl
             finally
             {
                 _benchmarkService.StopBenchmark(bench);
-                _syncTaskThrottler.Release();
+                ReleaseTaskSlot();
             }
         }
 
@@ -1394,13 +1401,35 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
+        private async Task ReserveTaskSlot()
+        {
+            bool shouldNotify = _syncTaskThrottler.CurrentCount >= _maxSyncTasks;
+            await _syncTaskThrottler.WaitAsync();
+
+            if (shouldNotify)
+            {
+                IsBusyChanged?.Invoke(this, true);
+            }
+        }
+
+        private void ReleaseTaskSlot()
+        {
+            var prevCount = _syncTaskThrottler.Release();
+            bool shouldNotify = prevCount >= _maxSyncTasks - 1;
+
+            if (shouldNotify)
+            {
+                IsBusyChanged?.Invoke(this, false);
+            }
+        }
+
         private WebAPIClient Api
         {
             get
             {
                 return _apiFactory.Create();
             }
-        }
+        }   
     }
 }
 
