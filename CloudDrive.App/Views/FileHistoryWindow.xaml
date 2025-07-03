@@ -124,7 +124,7 @@
                         <GridViewColumn Header="Data utworzenia" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Path=CreatedDate}"/>
+                                    <TextBlock Text="{Binding Path=CreatedDate, ConverterCulture=pl-PL}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

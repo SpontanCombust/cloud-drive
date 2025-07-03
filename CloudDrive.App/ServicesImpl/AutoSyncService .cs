@@ -61,7 +61,13 @@ namespace CloudDrive.App.ServicesImpl
 
             if (!IsInternetAvailable())
             {
-                _logger.LogWarning("Brak połączenia z internetem – synchronizacja pominięta.");
+                _logger.LogWarning("Synchronizacja pominięta - brak połączenia z internetem.");
+                return;
+            }
+
+            if (_syncService.IsBusy)
+            {
+                _logger.LogDebug("Synchronizacja pominięta – serwis synchronizacji jest zajęty pracą.");
                 return;
             }
 
@@ -79,7 +85,7 @@ namespace CloudDrive.App.ServicesImpl
                 _logger.LogInformation("AutoSync: rozpoczęcie synchronizacji o {Time}...", DateTime.Now);
 
                 _fileSystemWatcher.Stop();
-                await _syncService.SynchronizeAllFilesAsync();
+                await Task.Run(_syncService.SynchronizeAllFilesAsync);
                 _fileSystemWatcher.Start();
 
                 _lastSuccessfulSync = DateTime.Now;

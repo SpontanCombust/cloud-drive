@@ -66,6 +66,8 @@ namespace CloudDrive.App.Views
                 }
             }
 
+            _syncService.IsBusyChanged += OnSyncServiceBusyStatusChanged;
+
             Task.Run(async () =>
             {
                 // daj czas na pokazanie okna
@@ -103,20 +105,20 @@ namespace CloudDrive.App.Views
             });
         }
 
+        private void OnSyncServiceBusyStatusChanged(object? sender, bool isSyncServiceBusy)
+        {
+            ViewModel.SyncIsInProgress = isSyncServiceBusy;
+        }
+
         private async void FullSyncButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                ViewModel.SyncIsInProgress = true;
-                await _syncService.SynchronizeAllFilesAsync();
+                await Task.Run(_syncService.SynchronizeAllFilesAsync);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Błąd w synchronizacji: " + ex.Message);
-            }
-            finally
-            {
-                ViewModel.SyncIsInProgress = false;
             }
         }
 
@@ -126,6 +128,7 @@ namespace CloudDrive.App.Views
             {
                 _fileSystemWatcher.Stop();
                 _autoSyncService.StopSync();
+                _syncService.IsBusyChanged -= OnSyncServiceBusyStatusChanged;
             }
             catch (Exception ex)
             {
