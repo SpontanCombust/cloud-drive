@@ -219,8 +219,9 @@ namespace CloudDrive.App.ServicesImpl
 
         private async Task<int> PushAllLocalChangesAsync(FileIndexStagingHelper staging)
         {
-            var pushTasks = new List<Task>();
+            var pushTasks = new List<Task<bool>>();
             int numberOfChanges = 0;
+            bool[] processedChanges = [];
 
             // Faza 1: Akcje dla folderów w chmurze
 
@@ -242,24 +243,22 @@ namespace CloudDrive.App.ServicesImpl
             {
                 // nierekurencyjnie, bo localIncomingFileIndex już zajął się dogłębnym skanowaniem folderów
                 pushTasks.Add(UploadNewFolderToRemoteAsync(fsPath));
-                numberOfChanges++;
             }
 
             //foreach (var fsPath in foldersToUpdateOnRemote)
             //{
             //    pushTasks.Add(UploadModifiedFolderToRemoteAsync(fsPath));
-            //    numberOfChanges++;
             //}
 
             foreach (var fsPath in foldersToRemoveFromRemote)
             {
                 pushTasks.Add(RemoveFoldersFromRemoteAsync(fsPath));
-                numberOfChanges++;
             }
 
 
             // czekamy na zakończenie fazy
-            await Task.WhenAll(pushTasks);
+            processedChanges = await Task.WhenAll(pushTasks);
+            numberOfChanges += processedChanges.Count(b => b);
             pushTasks.Clear();
 
 
@@ -280,23 +279,21 @@ namespace CloudDrive.App.ServicesImpl
             foreach (var fsPath in filesToUpload)
             {
                 pushTasks.Add(UploadNewFileToRemoteAsync(fsPath));
-                numberOfChanges++;
             }
 
             foreach (var fsPath in filesToUpdateOnRemote)
             {
                 pushTasks.Add(UploadModifiedFileToRemoteAsync(fsPath));
-                numberOfChanges++;
             }
 
             foreach (var fsPath in filesToRemoveFromRemote)
             {
                 pushTasks.Add(RemoveFileFromRemoteAsync(fsPath));
-                numberOfChanges++;
             }
 
 
-            await Task.WhenAll(pushTasks);
+            processedChanges = await Task.WhenAll(pushTasks);
+            numberOfChanges += processedChanges.Count(b => b);
             pushTasks.Clear();           
 
 
@@ -610,12 +607,12 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        public async Task UploadNewFolderToRemoteAsync(WatchedFileSystemPath path)
+        public async Task<bool> UploadNewFolderToRemoteAsync(WatchedFileSystemPath path)
         {
             if (path.FileName.StartsWith("~$"))
             {
                 _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
-                return;
+                return false;
             }
             if (!path.Exists || !path.IsDirectory)
                 throw new Exception($"Folder nie istnieje lub nie jest folderem: {path.Full}");
@@ -651,15 +648,17 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
                 _syncTaskThrottler.Release();
             }
+
+            return true;
         }
 
-        public async Task RemoveFoldersFromRemoteAsync(WatchedFileSystemPath path)
+        public async Task<bool> RemoveFoldersFromRemoteAsync(WatchedFileSystemPath path)
         {
             var existingIndexEntry = _localCommitedFileIndex.FindByWatchedPath(path);
             if (existingIndexEntry == null)
             {
                 _logger.LogWarning("Nie znaleziono folderu do usunięcia: {Path}", path.Full);
-                return;
+                return false;
             }
 
 
@@ -703,6 +702,8 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
                 _syncTaskThrottler.Release();
             }
+
+            return true;
         }
 
         private async Task RemoveFolderLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
@@ -872,12 +873,12 @@ namespace CloudDrive.App.ServicesImpl
 
         //Pliki
 
-        public async Task UploadNewFileToRemoteAsync(WatchedFileSystemPath path)
+        public async Task<bool> UploadNewFileToRemoteAsync(WatchedFileSystemPath path)
         {
             if (path.FileName.StartsWith("~$"))
             {
                 _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
-                return;
+                return false;
             }
 
             if (!path.Exists)
@@ -919,6 +920,8 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
                 _syncTaskThrottler.Release();
             }
+
+            return true;
         }
 
         private async Task DownloadNewFileFromRemoteAsync(RemoteIncomingFileIndexEntry incomingRemoteEntry)
@@ -1032,12 +1035,12 @@ namespace CloudDrive.App.ServicesImpl
             return hashStr;
         }
 
-        public async Task UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
+        public async Task<bool> UploadModifiedFileToRemoteAsync(WatchedFileSystemPath path)
         {
             if (path.FileName.StartsWith("~$"))
             {
                 _logger.LogInformation("Pomijam tymczasowy plik Office: {Path}", path.Full);
-                return;
+                return false;
             }
 
             if (!path.Exists)
@@ -1057,7 +1060,7 @@ namespace CloudDrive.App.ServicesImpl
                 localHash.Equals(oldIndexEntry.Md5, StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogDebug("Plik nie zmienił się — pomijam upload: {Path}", path.Full);
-                return;
+                return false;
             }
 
 
@@ -1100,6 +1103,8 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
                 _syncTaskThrottler.Release();
             }
+
+            return true;
         }
 
         public async Task UploadRenamedFileToRemoteAsync(WatchedFileSystemPath oldPath, WatchedFileSystemPath newPath)
@@ -1157,13 +1162,13 @@ namespace CloudDrive.App.ServicesImpl
             }
         }
 
-        public async Task RemoveFileFromRemoteAsync(WatchedFileSystemPath path)
+        public async Task<bool> RemoveFileFromRemoteAsync(WatchedFileSystemPath path)
         {
             var indexEntry = _localCommitedFileIndex.FindByWatchedPath(path);
             if (indexEntry == null)
             {
                 _logger.LogWarning("Nie znaleziono pliku do usunięcia: {Path}", path.Full);
-                return;
+                return false;
             }
 
 
@@ -1196,6 +1201,8 @@ namespace CloudDrive.App.ServicesImpl
                 _benchmarkService.StopBenchmark(bench);
                 _syncTaskThrottler.Release();
             }
+
+            return true;
         }
 
         private async Task RemoveFileLocally(LocalCommitedFileIndexEntry commitedLocalEntry)
