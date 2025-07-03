@@ -110,6 +110,7 @@ namespace CloudDrive.App.ServicesImpl
             // Najpierw usuwanie, więc jest prioretyzacja stanu plików na serwerze
 
             var foldersToRemoveLocally = staging.DeletedRemotely()
+                .Where(set => set.LocalIncoming != null) // próbuj usuwać tylko jeśli też jest po stronie klienta
                 .Where(set => set.LocalCommited.IsDirectory)
                 .Select(set => set.LocalCommited);
 
@@ -125,6 +126,7 @@ namespace CloudDrive.App.ServicesImpl
             // Jeśli pojawią się jakieś, które były w folderach powyżej, powinny po cichu zostać pominięte
 
             var filesToRemoveLocally = staging.DeletedRemotely()
+                .Where(set => set.LocalIncoming != null) // próbuj usuwać tylko jeśli też jest po stronie klienta
                 .Where(set => !set.LocalCommited.IsDirectory)
                 .Select(set => set.LocalCommited);
 
@@ -236,6 +238,7 @@ namespace CloudDrive.App.ServicesImpl
             //    .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
 
             var foldersToRemoveFromRemote = staging.DeletedLocally()
+                .Where(set => set.RemoteIncoming != null) // próbuj usuwać tylko jeśli jest też na serwerze
                 .Where(set => set.LocalCommited.IsDirectory)
                 .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
 
@@ -273,6 +276,7 @@ namespace CloudDrive.App.ServicesImpl
                 .Select(set => set.LocalIncoming.GetWatchedFileSystemPath());
 
             var filesToRemoveFromRemote = staging.DeletedLocally()
+                .Where(set => set.RemoteIncoming != null) // próbuj usuwać tylko jeśli jest też na serwerze
                 .Where(set => !set.LocalCommited.IsDirectory)
                 .Select(set => set.LocalCommited.GetWatchedFileSystemPath());
 
@@ -693,6 +697,11 @@ namespace CloudDrive.App.ServicesImpl
                 UpdateLastServerSyncTime(resp.ServerTime.DateTime);
             }
             catch (ApiException ex)
+            {
+                _logger.LogError(ex, "Błąd API przy usuwaniu folderu: {Path}", path.Full);
+                //throw;
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Błąd przy usuwaniu folderu: {Path}", path.Full);
                 //throw;
