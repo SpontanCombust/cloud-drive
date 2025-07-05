@@ -8,6 +8,7 @@ namespace CloudDrive.App.Services
     public interface ILocalIncomingFileIndexService
     {
         void ScanWatchedFolder();
+        void ScanFolder(string fullFolderPath);
 
         IEnumerable<LocalIncomingFileIndexEntry> FindAll();
     }
