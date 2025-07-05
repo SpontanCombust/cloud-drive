@@ -32,9 +32,9 @@ namespace CloudDrive.App.ServicesImpl
 
             var benchmarkColumns = new List<string>(4);
 
-            benchmarkColumns.Add(benchmark.Name);
             benchmarkColumns.Add(benchmark.StartDateTime.ToString(DATETIME_FORMAT));
             benchmarkColumns.Add(benchmark.EndDateTime.ToString(DATETIME_FORMAT));
+            benchmarkColumns.Add(benchmark.Name);
             benchmarkColumns.Add(benchmark.ElapsedMillis.ToString());
             benchmarkColumns.AddRange(benchmark.ExtraInfo);
 
