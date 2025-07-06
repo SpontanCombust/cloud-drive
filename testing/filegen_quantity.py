@@ -7,12 +7,14 @@ FILE_SIZE_KB = 100
 FILE_SIZE_BYTES = FILE_SIZE_KB * 1024
 FILE_COUNTS = [
     10,
+    25,
     50,
+    75,
     100,
+    250,
     500,
-    1000,
-    5000,
-    10000,
+    750,
+    1000
 ]
 
 def ensure_dir(path):

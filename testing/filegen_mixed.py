@@ -7,13 +7,14 @@ from math import log
 FILE_EXTENSIONS = [".txt", ".jpg", ".bin", ".log", ".csv"]
 FILE_SIZE_SUM_BYTES = 2 ** 30  # ~1GB
 FILE_COUNTS = [
-    5, 
-    10, 
-    20, 
-    50, 
-    100, 
-    200, 
-    500, 
+    10,
+    25,
+    50,
+    75,
+    100,
+    250,
+    500,
+    750,
     1000
 ]
 
