@@ -1,0 +1,73 @@
+@startuml server-components
+
+left to right direction
+set namespaceSeparator none
+
+component "CloudDrive.Core" {
+    component "CloudDrive.Core.Domain.Entites" {
+        class File {}
+        class FileVersion {}
+        class User {}
+    }
+
+    component "CloudDrive.Core.DTO" {
+        class FileDTO {}
+        class FileVersionDTO {}
+        class UserDTO {}
+    }
+
+    component "CloudDrive.Core.Mappers" {
+        class FileMapper {}
+        class FileVersionMapper {}
+        class UserMapper {}
+    }
+
+    component "CloudDrive.Core.Services" {
+        interface IAccessTokenProvider {}
+        interface IAuthService {}
+        interface IFileInfoService {}
+        interface IFileManagerService {}
+        interface IFileSystemService {}
+        interface IFileVersionInfoService {}
+        interface IPasswordEncoder {}
+        interface IUserService {}
+    }
+}
+
+component "CloudDrive.Infrastructure" {
+    component "CloudDrive.Infrastructure.Services" {
+        class AuthService {}
+        class BCryptPasswordEncoder {}
+        class FileInfoService {}
+        class FileManagerService {}
+        class FileSystemService {}
+        class FileVersionInfoService {}
+        class JwtAccessTokenProvider {}
+        class UserService {}
+    }
+
+    component "CloudDrive.Infrastructure.Repositories" {
+        class AppDbContext {}
+    }
+}
+
+component "CloudDrive.WebAPI" {
+    component "CloudDrive.WebAPI.Controllers" {
+        class AuthController {}
+        class DirectoriesController {}
+        class FileInfoController {}
+        class FileVersionInfoController {}
+        class RegularFilesController {}
+        class SyncController {}
+        class UserController {}
+    }
+
+    class Program {}
+}
+
+
+"CloudDrive.Core" -- "CloudDrive.Infrastructure"
+"CloudDrive.Core" -- "CloudDrive.WebAPI"
+"CloudDrive.Infrastructure" -- "CloudDrive.WebAPI"
+
+@enduml

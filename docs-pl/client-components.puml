@@ -1,0 +1,87 @@
+@startuml client-components
+
+set namespaceSeparator none
+
+component "CloudDrive.App" {
+    component "CloudDrive.App.Factories" {
+        class WebApiClientFactory {}
+    }
+
+    component "CloudDrive.App.Model" {
+        class Benchmark {}
+        class FileIndexEntryStagingSet {}
+        class LocalCommitedFileIndexEntry {}
+        class LocalIncomingFileIndexEntry {}
+        class LogMessageEventArgs {}
+        class RemoteIncomingFileIndexEntry {}
+        class WatchedFileSystemPath {}
+    }
+
+    component "CloudDrive.App.Services" {
+        interface IAccessTokenHolder {}
+        interface IAutoSyncService {}
+        interface IBenchmarkService {}
+        interface IFileSystemWatcher {}
+        interface ILocalCommitedFileIndexService {}
+        interface ILocalIncomingFileIndexService {}
+        interface ILogHistoryService {}
+        interface ILogRelayService {}
+        interface IRemoteIncomingFileIndexService {}
+        interface ISyncService {}
+        interface IUserSettingsService {}
+        interface IViewLocator {}
+    }
+
+    component "CloudDrive.App.ServicesImpl" {
+        class AppDataUserSettingsService {}
+        class AutoSyncService {}
+        class BenchmarkService {}
+        class FileSystemSyncWatcher {}
+        class InMemoryLogHistoryService {}
+        class LiteDBLocalCommitedFileIndexService {}
+        class LogRelayService {}
+        class LocalIncomingFileIndexService {}
+        class RemoteIncomingFileIndexService {}
+        class SimpleRelayLoggerProvider {}
+        class SyncService {}
+        class ViewLocator {}
+        class WebAPIAccessTokenHolder {}
+    }
+
+    component "CloudDrive.App.Utils" {
+        class FileIndexStagingHelper {}
+    }
+
+    component "CloudDrive.App.ViewModels" {
+        class FileHistoryWindowViewModel {}
+        class FileIndexTreeItemViewModel {}
+        class FileIndexTreeViewModel {}
+        class FileVersionListItemViewModel {}
+        class SettingsPageViewModel {}
+        class StatusPageViewModel {}
+    }
+
+    component "CloudDrive.App.Views" {
+        class FileHistoryWindow {}
+        class LoginPage {}
+        class MainWindow {}
+        class SettingsPage {}
+        class StatusPage {}
+    }
+
+    class WebApiClient {}
+
+    class App {}
+}
+
+App *-- "CloudDrive.App.Views"
+' App *-- "CloudDrive.App.Services"
+"CloudDrive.App.Views" *-right- "CloudDrive.App.ViewModels"
+"CloudDrive.App.Views" o--down-- "CloudDrive.App.Services"
+"CloudDrive.App.Services" -- "CloudDrive.App.ServicesImpl"
+"CloudDrive.App.Services" *-----right-- "CloudDrive.App.Model"
+"CloudDrive.App.ServicesImpl" o--down-- WebApiClient
+"CloudDrive.App.ServicesImpl" o--down-- "CloudDrive.App.Utils"
+"CloudDrive.App.ServicesImpl" o--down-- "CloudDrive.App.Factories"
+
+@enduml
