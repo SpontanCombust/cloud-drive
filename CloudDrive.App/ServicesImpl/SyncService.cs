@@ -337,63 +337,40 @@ namespace CloudDrive.App.ServicesImpl
                 return;
             }
 
-            var bench = _benchmarkService.StartBenchmark("Nowy folder (rekurencyjnie)", folderPath.Relative);
+            var bench = _benchmarkService.StartBenchmark("Nowy folder rekurencyjnie", folderPath.Relative);
 
             try
             {
-                await UploadNewFolderToRemoteAsync(folderPath);
+                var localIncomingFileIndex = App.Services.GetRequiredService<ILocalIncomingFileIndexService>();
+                localIncomingFileIndex.ScanFolder(folderPath.Full);
+
+                var uploadTasks = new List<Task>();
+
+                uploadTasks.Add(UploadNewFolderToRemoteAsync(folderPath));
+
+                foreach (var fileIndex in localIncomingFileIndex.FindAll())
+                {
+                    var fileIndexPath = fileIndex.GetWatchedFileSystemPath();
+                    if (fileIndexPath.IsDirectory)
+                    {
+                        uploadTasks.Add(UploadNewFolderToRemoteAsync(fileIndexPath));
+                    }
+                    else
+                    {
+                        uploadTasks.Add(UploadNewFileToRemoteAsync(fileIndexPath));
+                    }
+                }
+
+                await Task.WhenAll(uploadTasks);
             }
             catch (ApiException ex)
             {
-                _logger.LogError(ex, "Błąd API przy tworzeniu folderu: {Path}, StatusCode: {StatusCode}, Response: {Response}",
+                _logger.LogError(ex, "Błąd API przy rekurencyjnym wysyłaniu folderu: {Path}, StatusCode: {StatusCode}, Response: {Response}",
                     folderPath.Full, ex.StatusCode, ex.Response);
-                return;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Nieoczekiwany błąd przy tworzeniu folderu: {Path}", folderPath.Full);
-                return;
-            }
-            finally
-            {
-                _benchmarkService.StopBenchmark(bench);
-            }
-
-            try
-            {
-                var directoryInfo = new DirectoryInfo(folderPath.Full);
-
-                foreach (var dir in directoryInfo.GetDirectories())
-                {
-                    try
-                    {
-                        var subFolderPath = new WatchedFileSystemPath(dir.FullName, folderPath.WatchedFolder, true);
-                        await UploadNewFolderRecursivelyAsync(subFolderPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Błąd przy rekurencyjnym wysyłaniu folderu: {Path}", dir.FullName);
-                    }
-                }
-
-                foreach (var file in directoryInfo.GetFiles())
-                {
-                    if (file.Name.StartsWith("~$")) continue;
-
-                    try
-                    {
-                        var filePath = new WatchedFileSystemPath(file.FullName, folderPath.WatchedFolder, false);
-                        await UploadNewFileToRemoteAsync(filePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Błąd przy wysyłaniu pliku w folderze: {File}", file.FullName);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Błąd podczas przetwarzania zawartości folderu: {Path}", folderPath.Full);
+                _logger.LogError(ex, "Nieoczekiwany błąd przy rekurencyjnym wysyłaniu folderu: {Path}", folderPath.Full);
             }
             finally
             {

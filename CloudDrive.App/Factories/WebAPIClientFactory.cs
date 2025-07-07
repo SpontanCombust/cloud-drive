@@ -30,7 +30,8 @@ namespace CloudDrive.App.Factories
             {
                 DefaultRequestHeaders = { 
                     Authorization = (token != null) ? new AuthenticationHeaderValue("Bearer", _authTokenHolder.GetAccessToken()) : null 
-                }
+                },
+                Timeout = TimeSpan.FromMinutes(30)
             };
 
             return new WebAPIClient(serverUrl?.ToString(), httpClient);

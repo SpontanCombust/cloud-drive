@@ -13,6 +13,8 @@ namespace CloudDrive.App.ServicesImpl
         private readonly ILogger<BenchmarkService> _logger;
         private readonly object _csvLock = new object();
 
+        readonly string DATETIME_FORMAT = "dd.MM.yyyy hh:mm:ss.fff";
+
         public BenchmarkService(ILogger<BenchmarkService> logger)
         {
             _logger = logger;
@@ -30,7 +32,8 @@ namespace CloudDrive.App.ServicesImpl
 
             var benchmarkColumns = new List<string>(4);
 
-            benchmarkColumns.Add(benchmark.ExecutionDateTime.ToString());
+            benchmarkColumns.Add(benchmark.StartDateTime.ToString(DATETIME_FORMAT));
+            benchmarkColumns.Add(benchmark.EndDateTime.ToString(DATETIME_FORMAT));
             benchmarkColumns.Add(benchmark.Name);
             benchmarkColumns.Add(benchmark.ElapsedMillis.ToString());
             benchmarkColumns.AddRange(benchmark.ExtraInfo);

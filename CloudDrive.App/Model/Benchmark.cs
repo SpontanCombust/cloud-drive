@@ -6,8 +6,9 @@ namespace CloudDrive.App.Model
     {
         public string Name { get; }
         public string[] ExtraInfo { get; }
-        public DateTime ExecutionDateTime { get; private set; }
+        public DateTime StartDateTime { get; private set; }
         public int ElapsedMillis { get; private set; }
+        public DateTime EndDateTime => StartDateTime.AddMilliseconds(ElapsedMillis);
 
         private Stopwatch Stopwatch { get; }
 
@@ -16,7 +17,7 @@ namespace CloudDrive.App.Model
         {
             Name = name;
             ExtraInfo = extraInfo;
-            ExecutionDateTime = DateTime.Now.ToLocalTime();
+            StartDateTime = DateTime.Now;
             ElapsedMillis = 0;
             Stopwatch = Stopwatch.StartNew();
         }
